@@ -39,6 +39,7 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
   - User authentication and profile management.
   - Lemon Squeezy payment processing for token purchases.
   - Basic web interface for user interaction.
+  - Rate limiting non-logged in users using local storage. Logged in users get more, paid users get even more.
 - **In Development**:
   - Allergy and dietary preference filtering.
   - Photo input for pantry items (advanced feature).
