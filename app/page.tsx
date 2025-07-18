@@ -13,16 +13,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  ChefHat,
   Utensils,
   Heart,
   Zap,
   Clock,
   Users,
-  ShoppingCart,
   Sparkles,
   Leaf,
   Shield,
+  ShoppingCart,
+  ChefHat,
 } from "lucide-react";
 
 interface DietaryPreference {
@@ -165,41 +165,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <ChefHat className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900">
-                Healthy Meals AI
-              </h1>
-            </div>
-
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <div className="hidden sm:flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 text-yellow-500" />
-                <span className="text-sm text-gray-600">
-                  {freeGenerationsLeft > 0
-                    ? `${freeGenerationsLeft} free`
-                    : `${tokensBalance} tokens`}
-                </span>
-              </div>
-              <Button
-                onClick={purchaseTokens}
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
-              >
-                <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Buy Tokens</span>
-                <span className="sm:hidden">Buy</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Hero Section */}
         <div className="text-center mb-8 sm:mb-12">
@@ -489,51 +455,6 @@ export default function Home() {
                 </CardContent>
               </Card>
             )}
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <div className="mt-12 sm:mt-16">
-          <h3 className="text-xl sm:text-2xl font-bold text-center mb-6 sm:mb-8">
-            Why Choose Healthy Meals AI?
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <Sparkles className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                  <h4 className="font-semibold mb-2">AI-Powered Recipes</h4>
-                  <p className="text-sm text-gray-600">
-                    Advanced AI technology creates personalized recipes based on
-                    your ingredients and preferences.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <Heart className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                  <h4 className="font-semibold mb-2">Dietary Safe</h4>
-                  <p className="text-sm text-gray-600">
-                    Specify allergies and dietary restrictions for safe,
-                    personalized meal suggestions.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <Zap className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                  <h4 className="font-semibold mb-2">High-Protein Focus</h4>
-                  <p className="text-sm text-gray-600">
-                    Prioritize high-protein meals to support your fitness and
-                    health goals.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </main>
