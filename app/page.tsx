@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -165,14 +164,21 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/20 to-blue-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-green-400/10 to-teal-400/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 relative z-10">
         {/* Hero Section */}
         <div className="text-center mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-800 via-pink-800 to-indigo-800 bg-clip-text text-transparent mb-3 sm:mb-4">
             Transform Your Pantry Into a Gourmet Kitchen
           </h2>
-          <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto px-2">
+          <p className="text-base sm:text-lg lg:text-xl text-gray-700 max-w-3xl mx-auto px-2 font-medium">
             Get personalized, high-protein meal plans tailored to your
             ingredients and dietary needs. Save time, eat healthy, and enjoy
             delicious meals every day.
@@ -183,27 +189,32 @@ export default function Home() {
           {/* Input Section */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Ingredients Input */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Utensils className="w-5 h-5" />
+            <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-purple-500/10 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg border-b border-purple-100/50 p-6">
+                <CardTitle className="flex items-center space-x-2 text-purple-800">
+                  <Utensils className="w-5 h-5 text-purple-600" />
                   <span>What&apos;s in your kitchen?</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-purple-600/80">
                   List the ingredients you have available. Be as specific as
                   possible for better results.
                 </CardDescription>
-              </CardHeader>
+              </div>
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="ingredients">Ingredients</Label>
+                    <Label
+                      htmlFor="ingredients"
+                      className="text-base font-medium text-gray-700 mb-2 block"
+                    >
+                      Ingredients
+                    </Label>
                     <textarea
                       id="ingredients"
                       value={ingredients}
                       onChange={(e) => setIngredients(e.target.value)}
                       placeholder="e.g., chicken breast, quinoa, broccoli, olive oil, garlic, lemon..."
-                      className="w-full h-24 sm:h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none text-sm sm:text-base"
+                      className="w-full h-24 sm:h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm sm:text-base bg-white/80 backdrop-blur-sm"
                     />
                   </div>
 
@@ -226,17 +237,17 @@ export default function Home() {
             </Card>
 
             {/* Dietary Preferences */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Heart className="w-5 h-5" />
+            <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-green-500/10 hover:shadow-2xl hover:shadow-green-500/20 transition-all duration-300">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg border-b border-green-100/50 p-6">
+                <CardTitle className="flex items-center space-x-2 text-green-800">
+                  <Heart className="w-5 h-5 text-green-600" />
                   <span>Dietary Preferences</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-green-600/80">
                   Select your dietary preferences to get personalized meal
                   suggestions.
                 </CardDescription>
-              </CardHeader>
+              </div>
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   {dietaryPreferences.map((preference) => (
@@ -260,16 +271,16 @@ export default function Home() {
             </Card>
 
             {/* Allergies */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Shield className="w-5 h-5" />
+            <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-orange-500/10 hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-300">
+              <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-t-lg border-b border-orange-100/50 p-6">
+                <CardTitle className="flex items-center space-x-2 text-orange-800">
+                  <Shield className="w-5 h-5 text-orange-600" />
                   <span>Allergies & Intolerances</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-orange-600/80">
                   Select any ingredients you need to avoid for safety.
                 </CardDescription>
-              </CardHeader>
+              </div>
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                   {commonAllergies.map((allergy) => (
@@ -295,7 +306,7 @@ export default function Home() {
             <Button
               onClick={generateMeal}
               disabled={isGenerating || !ingredients.trim()}
-              className="w-full h-12 sm:h-14 text-base sm:text-lg bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+              className="w-full h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
             >
               {isGenerating ? (
                 <>
@@ -320,10 +331,12 @@ export default function Home() {
           {/* Results Section */}
           <div className="space-y-4 sm:space-y-6">
             {/* Token Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Your Balance</CardTitle>
-              </CardHeader>
+            <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
+              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg border-b border-blue-100/50 p-6">
+                <CardTitle className="text-lg text-blue-800">
+                  Your Balance
+                </CardTitle>
+              </div>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
@@ -357,13 +370,13 @@ export default function Home() {
 
             {/* Generated Meal */}
             {generatedMeal && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <ChefHat className="w-5 h-5" />
+              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
+                  <CardTitle className="flex items-center space-x-2 text-emerald-800">
+                    <ChefHat className="w-5 h-5 text-emerald-600" />
                     <span>Your Generated Meal</span>
                   </CardTitle>
-                </CardHeader>
+                </div>
                 <CardContent className="space-y-4">
                   <div>
                     <h3 className="font-semibold text-lg mb-2">
