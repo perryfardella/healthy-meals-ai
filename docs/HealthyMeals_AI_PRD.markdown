@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Healthy Meals AI App is a web-based platform designed to empower users to create healthy, high-protein meals using ingredients they have on hand. By leveraging advanced AI technology through Vercel's AI SDK and the cost-effective Deepseek model, the app provides personalized meal suggestions tailored to users' dietary preferences and restrictions, such as allergies. The app aims to simplify meal planning, promote nutritious eating, and enhance user wellness by offering detailed recipes and nutritional information. Integrated with LemonSqueezy for a token-based payment system, the app ensures accessibility with 5 free generations for new users and affordable token purchases.
+The Healthy Meals AI App is a web-based platform designed to empower users to create healthy, high-protein meals using ingredients they have on hand. By leveraging advanced AI technology through Vercel's AI SDK and Vercel's AI Gateway for centralized AI model management, the app provides personalized meal suggestions tailored to users' dietary preferences and restrictions, such as allergies. The app aims to simplify meal planning, promote nutritious eating, and enhance user wellness by offering detailed recipes and nutritional information. Integrated with LemonSqueezy for a token-based payment system, the app ensures accessibility with 5 free generations for new users and affordable token purchases.
 
 ## Success Metrics
 
@@ -19,7 +19,7 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
 
 - **MVP Development**: August 2025 - October 2025
   - Basic meal generation based on text input of available ingredients.
-  - Integration with Vercel's AI SDK and Deepseek model.
+  - Integration with Vercel's AI SDK and Vercel's AI Gateway for centralized AI model management.
   - Basic user authentication and profile management.
   - LemonSqueezy integration for token purchases.
 - **Beta Testing**: November 2025 - December 2025
@@ -35,7 +35,7 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
 
 - **Planned Features**:
   - Meal generation based on text input of ingredients.
-  - Integration with Vercel's AI SDK and Deepseek model.
+  - Integration with Vercel's AI SDK and Vercel's AI Gateway for centralized AI model management.
   - User authentication and profile management.
   - Lemon Squeezy payment processing for token purchases.
   - Basic web interface for user interaction.
@@ -106,13 +106,25 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
   - Authentication: Supabase Auth
   - Functions: Supabase Functions or Vercel Functions
 - **AI Integration**
-  - Vercel AI SDK with Deepseek model for meal generation
+  - Vercel AI SDK for seamless AI model integration
+  - Vercel AI Gateway for centralized AI model management and billing
+  - Support for multiple AI models (Deepseek, OpenAI, Anthropic, etc.) through single gateway
 - **Payment Processing**
   - LemonSqueezy for token purchases
 - **Image Recognition (for photo input)**
-  - Vercel AI SDK and either Deepseek or OpenAI for image recognition
+  - Vercel AI SDK with AI Gateway for image recognition across multiple models
 - **Language**: American English for all content
 - **Package Manager**: pnpm (use pnpm dlx for executions)
+
+## AI Gateway Benefits
+
+The use of Vercel's AI Gateway provides several key advantages:
+
+- **Centralized Billing**: Single payment method for all AI model usage, eliminating the need to manage credits across multiple vendors
+- **Model Flexibility**: Easy switching between different AI models (Deepseek, OpenAI, Anthropic, etc.) without code changes
+- **Cost Optimization**: Ability to route requests to the most cost-effective model for each use case
+- **Simplified Management**: Single dashboard for monitoring usage, costs, and performance across all AI models
+- **Future-Proofing**: Easy integration of new AI models as they become available
 
 ## Infrastructure & DevOps
 
@@ -146,12 +158,14 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
 ## Other Considerations
 
 - **Accessibility**: Follow WCAG guidelines to ensure the app is accessible to users with disabilities.
-- **Scalability**: Design for a large user base, leveraging Deepseek's cost-effectiveness.
+- **Scalability**: Design for a large user base, leveraging Vercel AI Gateway's centralized model management and cost optimization.
 - **Security**: Implement robust authentication and authorization, especially for payment processing.
 - **Internationalization**: Plan for future support of multiple languages.
 
 ## Citations
 
+- Vercel AI SDK Documentation
+- Vercel AI Gateway Documentation
 - DeepSeek API Docs - Pricing
 - OpenAI Pricing
-- Vercel AI SDK Providers: DeepSeek
+- Anthropic API Documentation
