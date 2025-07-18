@@ -495,7 +495,7 @@ export default function Home() {
 
             {/* Generated Meal */}
             {generatedMeal && (
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
+              <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
                 <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
                   <CardTitle className="flex items-center space-x-2 text-emerald-800">
                     <ChefHat className="w-5 h-5 text-emerald-600" />
