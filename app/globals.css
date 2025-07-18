@@ -119,4 +119,9 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Make all buttons show pointer cursor on hover */
+  button:hover {
+    cursor: pointer;
+  }
 }
