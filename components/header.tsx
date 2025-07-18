@@ -47,6 +47,14 @@ export function Header({
               <span className="hidden sm:inline">Buy Tokens</span>
               <span className="sm:hidden">Buy</span>
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => (window.location.href = "/recipe-book")}
+              className="text-xs sm:text-sm"
+            >
+              Recipe Book
+            </Button>
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
