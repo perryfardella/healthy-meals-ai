@@ -79,6 +79,10 @@ export default function Home() {
   const [ingredients, setIngredients] = useState<string>("");
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+  const [customPreferences, setCustomPreferences] = useState<string[]>([]);
+  const [customAllergies, setCustomAllergies] = useState<string[]>([]);
+  const [newPreference, setNewPreference] = useState<string>("");
+  const [newAllergy, setNewAllergy] = useState<string>("");
   const [includeExtraIngredients, setIncludeExtraIngredients] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedMeal, setGeneratedMeal] = useState<GeneratedMeal | null>(
@@ -101,6 +105,31 @@ export default function Home() {
         ? prev.filter((id) => id !== allergyId)
         : [...prev, allergyId]
     );
+  };
+
+  const addCustomPreference = () => {
+    if (
+      newPreference.trim() &&
+      !customPreferences.includes(newPreference.trim())
+    ) {
+      setCustomPreferences((prev) => [...prev, newPreference.trim()]);
+      setNewPreference("");
+    }
+  };
+
+  const removeCustomPreference = (preference: string) => {
+    setCustomPreferences((prev) => prev.filter((p) => p !== preference));
+  };
+
+  const addCustomAllergy = () => {
+    if (newAllergy.trim() && !customAllergies.includes(newAllergy.trim())) {
+      setCustomAllergies((prev) => [...prev, newAllergy.trim()]);
+      setNewAllergy("");
+    }
+  };
+
+  const removeCustomAllergy = (allergy: string) => {
+    setCustomAllergies((prev) => prev.filter((a) => a !== allergy));
   };
 
   const generateMeal = async () => {
@@ -249,23 +278,71 @@ export default function Home() {
                 </CardDescription>
               </div>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                  {dietaryPreferences.map((preference) => (
-                    <Button
-                      key={preference.id}
-                      variant={
-                        selectedPreferences.includes(preference.id)
-                          ? "default"
-                          : "outline"
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                    {dietaryPreferences.map((preference) => (
+                      <Button
+                        key={preference.id}
+                        variant={
+                          selectedPreferences.includes(preference.id)
+                            ? "default"
+                            : "outline"
+                        }
+                        size="sm"
+                        onClick={() => togglePreference(preference.id)}
+                        className="justify-start text-xs sm:text-sm"
+                      >
+                        {preference.icon}
+                        <span className="ml-1 sm:ml-2">{preference.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Custom Preferences */}
+                  {customPreferences.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-gray-700">
+                        Custom Preferences:
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {customPreferences.map((preference) => (
+                          <div
+                            key={preference}
+                            className="flex items-center space-x-1 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs"
+                          >
+                            <span>{preference}</span>
+                            <button
+                              onClick={() => removeCustomPreference(preference)}
+                              className="text-green-600 hover:text-green-800 ml-1"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add Custom Preference */}
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={newPreference}
+                      onChange={(e) => setNewPreference(e.target.value)}
+                      placeholder="Add custom preference..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent h-9"
+                      onKeyPress={(e) =>
+                        e.key === "Enter" && addCustomPreference()
                       }
+                    />
+                    <Button
+                      onClick={addCustomPreference}
                       size="sm"
-                      onClick={() => togglePreference(preference.id)}
-                      className="justify-start text-xs sm:text-sm"
+                      className="bg-green-600 hover:bg-green-700 text-white h-9 px-4"
                     >
-                      {preference.icon}
-                      <span className="ml-1 sm:ml-2">{preference.label}</span>
+                      Add
                     </Button>
-                  ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -282,22 +359,70 @@ export default function Home() {
                 </CardDescription>
               </div>
               <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                  {commonAllergies.map((allergy) => (
-                    <Button
-                      key={allergy.id}
-                      variant={
-                        selectedAllergies.includes(allergy.id)
-                          ? "destructive"
-                          : "outline"
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                    {commonAllergies.map((allergy) => (
+                      <Button
+                        key={allergy.id}
+                        variant={
+                          selectedAllergies.includes(allergy.id)
+                            ? "destructive"
+                            : "outline"
+                        }
+                        size="sm"
+                        onClick={() => toggleAllergy(allergy.id)}
+                        className="text-xs sm:text-sm"
+                      >
+                        {allergy.label}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Custom Allergies */}
+                  {customAllergies.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-gray-700">
+                        Custom Allergies:
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {customAllergies.map((allergy) => (
+                          <div
+                            key={allergy}
+                            className="flex items-center space-x-1 bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs"
+                          >
+                            <span>{allergy}</span>
+                            <button
+                              onClick={() => removeCustomAllergy(allergy)}
+                              className="text-orange-600 hover:text-orange-800 ml-1"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add Custom Allergy */}
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={newAllergy}
+                      onChange={(e) => setNewAllergy(e.target.value)}
+                      placeholder="Add custom allergy..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent h-9"
+                      onKeyPress={(e) =>
+                        e.key === "Enter" && addCustomAllergy()
                       }
+                    />
+                    <Button
+                      onClick={addCustomAllergy}
                       size="sm"
-                      onClick={() => toggleAllergy(allergy.id)}
-                      className="text-xs sm:text-sm"
+                      className="bg-orange-600 hover:bg-orange-700 text-white h-9 px-4"
                     >
-                      {allergy.label}
+                      Add
                     </Button>
-                  ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
