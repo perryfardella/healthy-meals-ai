@@ -36,7 +36,7 @@ This rule serves as a reminder to always consult the PRD. For the most up-to-dat
 
 - Frontend: Next.js, React, TypeScript, Tailwind CSS, Shadcn UI
 - Backend: Supabase (PostgreSQL database, Authentication)
-- AI Integration: Vercel AI SDK + Vercel AI Gateway for centralized model management
+- AI Integration: **Vercel AI SDK v5 (beta)** + Vercel AI Gateway for centralized model management
 - Package Manager: pnpm _important_ use pnpm / pnpm dlx for all shell commands, not npm
 - Hosting: Vercel
 - Payments: Lemon Squeezy
@@ -46,7 +46,7 @@ This rule serves as a reminder to always consult the PRD. For the most up-to-dat
 
 - User Authentication (via Supabase)
 - Payment processing (via Lemon Squeezy)
-- AI-powered meal generation (via Vercel AI Gateway)
+- AI-powered meal generation (via **Vercel AI SDK v5 (beta)** and Vercel AI Gateway)
 
 ## Out of Scope Features
 

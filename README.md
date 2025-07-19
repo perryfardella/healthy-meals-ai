@@ -1,10 +1,10 @@
 # Healthy Meals AI
 
-An AI-powered recipe generation app that creates personalized, high-protein meals using your available ingredients. Built with Next.js, TypeScript, Tailwind CSS, and Vercel AI SDK.
+An AI-powered recipe generation app that creates personalized, high-protein meals using your available ingredients. Built with Next.js, TypeScript, Tailwind CSS, and **Vercel AI SDK v5 (beta)**.
 
 ## Features
 
-- 🤖 **AI-Powered Recipe Generation**: Uses DeepSeek through Vercel AI Gateway to generate structured recipe responses
+- 🤖 **AI-Powered Recipe Generation**: Uses DeepSeek through Vercel AI Gateway with **Vercel AI SDK v5 (beta)** to generate structured recipe responses
 - 🥗 **High-Protein Focus**: Prioritizes healthy, protein-rich meals
 - 🎯 **Personalized**: Considers dietary preferences, allergies, and available ingredients
 - 📱 **Responsive Design**: Beautiful, mobile-first interface with Shadcn UI components
@@ -47,7 +47,7 @@ pnpm dev
 
 - **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS, Shadcn UI
 - **Backend**: Supabase (PostgreSQL, Authentication)
-- **AI**: Vercel AI SDK, DeepSeek, Vercel AI Gateway
+- **AI**: **Vercel AI SDK v5 (beta)**, DeepSeek, Vercel AI Gateway
 - **Payments**: Lemon Squeezy
 - **Deployment**: Vercel
 

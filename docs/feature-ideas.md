@@ -1,3 +1,5 @@
+# Feature Ideas for Healthy Meals AI
+
 **Sign up for an account benefits:**
 
 - Save past recipes
