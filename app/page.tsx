@@ -522,8 +522,7 @@ export default function Home() {
                         <Button
                           type="button"
                           onClick={addCustomPreference}
-                          size="sm"
-                          className="text-xs sm:text-sm"
+                          className="px-3 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-md transition-colors duration-200"
                         >
                           Add
                         </Button>
@@ -609,9 +608,7 @@ export default function Home() {
                         <Button
                           type="button"
                           onClick={addCustomAllergy}
-                          size="sm"
-                          variant="outline"
-                          className="text-xs sm:text-sm"
+                          className="px-3 py-2 bg-red-700 hover:bg-red-800 text-white text-sm font-medium rounded-md transition-colors duration-200"
                         >
                           Add
                         </Button>
