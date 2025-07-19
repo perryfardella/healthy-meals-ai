@@ -181,15 +181,15 @@ export default function Home() {
     defaultValues: {
       ingredients: "",
       includeExtraIngredients: false,
-      includeBasicIngredients: false,
+      includeBasicIngredients: true,
       dietaryPreferences: [],
       customPreferences: [],
       allergies: [],
       customAllergies: [],
-      maxCookingTime: "",
+      maxCookingTime: "30",
       mealType: [],
-      servingSize: "",
-      difficultyLevel: "",
+      servingSize: "4",
+      difficultyLevel: "medium",
     },
   });
 
