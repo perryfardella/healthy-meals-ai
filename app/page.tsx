@@ -37,6 +37,7 @@ import {
   Moon,
   Coffee,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { RecipeGenerationResponseType } from "@/lib/types/recipe";
 
@@ -161,7 +162,6 @@ export default function Home() {
   const [generatedMeal, setGeneratedMeal] =
     useState<RecipeGenerationResponseType | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [streamingText, setStreamingText] = useState<string>("");
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -266,7 +266,7 @@ export default function Home() {
   const generateMeal = async () => {
     setIsGenerating(true);
     setError(null);
-    setStreamingText("");
+    setGeneratedMeal(null);
 
     try {
       const formData = getValues();
@@ -293,7 +293,7 @@ Difficulty Level: ${formData.difficultyLevel}`,
         ],
       };
 
-      // Use streaming API
+      // Use API
       const response = await fetch("/api/recipe-generator", {
         method: "POST",
         headers: {
@@ -306,47 +306,9 @@ Difficulty Level: ${formData.difficultyLevel}`,
         throw new Error(`Failed to generate recipe: ${response.statusText}`);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error("No response body");
-      }
-
-      const decoder = new TextDecoder();
-      let accumulatedText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        accumulatedText += chunk;
-        setStreamingText(accumulatedText);
-      }
-
-      // For now, we'll just display the streaming text
-      // In a real implementation, you'd parse this into structured data
-      setGeneratedMeal({
-        recipe: {
-          title: "Streaming Recipe Response",
-          description: accumulatedText,
-          prepTime: 0,
-          cookTime: 0,
-          servings: 1,
-          difficulty: "Easy" as const,
-          cuisine: "Mixed",
-          dietaryTags: ["Streaming"],
-          ingredients: [],
-          instructions: [],
-          nutrition: {
-            calories: 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0,
-          },
-        },
-        usedIngredients: [],
-        confidence: 0.8,
-      });
+      const data = await response.json();
+      console.log("Recipe generated:", data);
+      setGeneratedMeal(data);
     } catch (err) {
       console.error("Error generating recipe:", err);
       setError(
@@ -784,11 +746,11 @@ Difficulty Level: ${formData.difficultyLevel}`,
                   >
                     {isGenerating ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
                         <span className="hidden sm:inline">
-                          Streaming your meal...
+                          Creating your recipe...
                         </span>
-                        <span className="sm:hidden">Streaming...</span>
+                        <span className="sm:hidden">Creating...</span>
                       </>
                     ) : (
                       <>
@@ -825,129 +787,150 @@ Difficulty Level: ${formData.difficultyLevel}`,
                   </Card>
                 )}
 
-                {/* Streaming Text Display */}
-                {streamingText && (
-                  <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-blue-500/10">
-                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg border-b border-blue-100/50 p-6">
-                      <CardTitle className="flex items-center space-x-2 text-blue-800">
-                        <Sparkles className="w-5 h-5 text-blue-600" />
-                        <span>Streaming Response</span>
+                {/* Recipe Card */}
+                {(isGenerating || generatedMeal) && (
+                  <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
+                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
+                      <CardTitle className="flex items-center space-x-2 text-emerald-800">
+                        <ChefHat className="w-5 h-5 text-emerald-600" />
+                        <span>
+                          {isGenerating
+                            ? "Creating Your Recipe..."
+                            : "Your Generated Recipe"}
+                        </span>
                       </CardTitle>
                     </div>
-                    <CardContent>
-                      <div className="whitespace-pre-wrap text-sm text-gray-700 max-h-96 overflow-y-auto">
-                        {streamingText}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {generatedMeal && (
-                  <div className="space-y-4 sm:space-y-6">
-                    {/* Generated Meal */}
-                    <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
-                      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
-                        <CardTitle className="flex items-center space-x-2 text-emerald-800">
-                          <ChefHat className="w-5 h-5 text-emerald-600" />
-                          <span>Your Generated Recipe</span>
-                        </CardTitle>
-                      </div>
-                      <CardContent className="space-y-4">
-                        <div>
-                          <h3 className="font-semibold text-lg mb-2">
-                            {generatedMeal.recipe.title}
-                          </h3>
-                          <p className="text-gray-600 text-sm mb-3">
-                            {generatedMeal.recipe.description}
-                          </p>
-                          <div className="flex flex-wrap gap-2 mb-3">
-                            {generatedMeal.recipe.dietaryTags.map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant="secondary"
-                                className="text-xs"
+                    <CardContent className="space-y-4">
+                      {isGenerating ? (
+                        // Loading state
+                        <div className="space-y-4">
+                          <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                          <div className="space-y-2">
+                            <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                            <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                            {[1, 2, 3, 4].map((i) => (
+                              <div
+                                key={i}
+                                className="bg-gray-100 p-2 rounded animate-pulse"
                               >
-                                {tag}
-                              </Badge>
+                                <div className="h-4 bg-gray-200 rounded mb-1"></div>
+                                <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto"></div>
+                              </div>
                             ))}
                           </div>
                         </div>
-
-                        {/* Macros */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                          <div className="bg-blue-50 p-2 rounded">
-                            <div className="text-xs sm:text-sm font-semibold text-blue-700">
-                              {generatedMeal.recipe.nutrition.calories}
-                            </div>
-                            <div className="text-xs text-blue-600">
-                              Calories
-                            </div>
-                          </div>
-                          <div className="bg-green-50 p-2 rounded">
-                            <div className="text-xs sm:text-sm font-semibold text-green-700">
-                              {generatedMeal.recipe.nutrition.protein}g
-                            </div>
-                            <div className="text-xs text-green-600">
-                              Protein
-                            </div>
-                          </div>
-                          <div className="bg-yellow-50 p-2 rounded">
-                            <div className="text-xs sm:text-sm font-semibold text-yellow-700">
-                              {generatedMeal.recipe.nutrition.carbs}g
-                            </div>
-                            <div className="text-xs text-yellow-600">Carbs</div>
-                          </div>
-                          <div className="bg-red-50 p-2 rounded">
-                            <div className="text-xs sm:text-sm font-semibold text-red-700">
-                              {generatedMeal.recipe.nutrition.fat}g
-                            </div>
-                            <div className="text-xs text-red-600">Fat</div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                            <span>
-                              {generatedMeal.recipe.prepTime +
-                                generatedMeal.recipe.cookTime}{" "}
-                              min
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                            <span>{generatedMeal.recipe.difficulty}</span>
-                          </div>
-                        </div>
-
-                        {/* Used Ingredients */}
-                        {generatedMeal.usedIngredients.length > 0 && (
+                      ) : (
+                        // Recipe content
+                        <>
+                          {/* Title and Description */}
                           <div>
-                            <h4 className="font-semibold mb-2 text-sm sm:text-base text-green-700">
-                              Used Your Ingredients
-                            </h4>
-                            <ul className="space-y-1 text-xs sm:text-sm">
-                              {generatedMeal.usedIngredients.map(
-                                (ingredient, index) => (
-                                  <li
-                                    key={index}
-                                    className="flex items-center space-x-2"
-                                  >
-                                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full flex-shrink-0"></div>
-                                    <span className="text-gray-700">
-                                      {ingredient}
-                                    </span>
-                                  </li>
-                                )
-                              )}
-                            </ul>
-                          </div>
-                        )}
+                            <h3 className="font-semibold text-lg mb-2">
+                              {generatedMeal?.recipe.title}
+                            </h3>
+                            <p className="text-gray-600 text-sm mb-3">
+                              {generatedMeal?.recipe.description}
+                            </p>
 
-                        {/* Suggested Additional Ingredients */}
-                        {generatedMeal.suggestedAdditionalIngredients &&
-                          generatedMeal.suggestedAdditionalIngredients.length >
-                            0 && (
+                            {/* Dietary Tags */}
+                            {generatedMeal?.recipe.dietaryTags && (
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {generatedMeal.recipe.dietaryTags.map(
+                                  (tag: string) => (
+                                    <Badge
+                                      key={tag}
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      {tag}
+                                    </Badge>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Nutrition Info */}
+                          {generatedMeal?.recipe.nutrition && (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                              <div className="bg-blue-50 p-2 rounded">
+                                <div className="text-xs sm:text-sm font-semibold text-blue-700">
+                                  {generatedMeal.recipe.nutrition.calories}
+                                </div>
+                                <div className="text-xs text-blue-600">
+                                  Calories
+                                </div>
+                              </div>
+                              <div className="bg-green-50 p-2 rounded">
+                                <div className="text-xs sm:text-sm font-semibold text-green-700">
+                                  {generatedMeal.recipe.nutrition.protein}g
+                                </div>
+                                <div className="text-xs text-green-600">
+                                  Protein
+                                </div>
+                              </div>
+                              <div className="bg-yellow-50 p-2 rounded">
+                                <div className="text-xs sm:text-sm font-semibold text-yellow-700">
+                                  {generatedMeal.recipe.nutrition.carbs}g
+                                </div>
+                                <div className="text-xs text-yellow-600">
+                                  Carbs
+                                </div>
+                              </div>
+                              <div className="bg-red-50 p-2 rounded">
+                                <div className="text-xs sm:text-sm font-semibold text-red-700">
+                                  {generatedMeal.recipe.nutrition.fat}g
+                                </div>
+                                <div className="text-xs text-red-600">Fat</div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Timing and Difficulty */}
+                          <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600">
+                            <div className="flex items-center space-x-1">
+                              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <span>
+                                {(generatedMeal?.recipe.prepTime || 0) +
+                                  (generatedMeal?.recipe.cookTime || 0)}{" "}
+                                min
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <span>
+                                {generatedMeal?.recipe.difficulty || "Medium"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Used Ingredients */}
+                          {generatedMeal?.usedIngredients && (
+                            <div>
+                              <h4 className="font-semibold mb-2 text-sm sm:text-base text-green-700">
+                                Used Your Ingredients
+                              </h4>
+                              <ul className="space-y-1 text-xs sm:text-sm">
+                                {generatedMeal.usedIngredients.map(
+                                  (ingredient, index) => (
+                                    <li
+                                      key={index}
+                                      className="flex items-center space-x-2"
+                                    >
+                                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full flex-shrink-0"></div>
+                                      <span className="text-gray-700">
+                                        {ingredient}
+                                      </span>
+                                    </li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Suggested Additional Ingredients */}
+                          {generatedMeal?.suggestedAdditionalIngredients && (
                             <div>
                               <h4 className="font-semibold mb-2 text-sm sm:text-base text-blue-700">
                                 Suggested Additional Ingredients
@@ -970,71 +953,97 @@ Difficulty Level: ${formData.difficultyLevel}`,
                             </div>
                           )}
 
-                        {/* Recipe Ingredients */}
-                        <div>
-                          <h4 className="font-semibold mb-2 text-sm sm:text-base">
-                            Recipe Ingredients
-                          </h4>
-                          <ul className="space-y-1 text-xs sm:text-sm">
-                            {generatedMeal.recipe.ingredients.map(
-                              (ingredient, index) => (
-                                <li
-                                  key={index}
-                                  className="flex items-center space-x-2"
-                                >
-                                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></div>
-                                  <span className="text-gray-700">
-                                    {ingredient.amount} {ingredient.unit}{" "}
-                                    {ingredient.name}
-                                    {ingredient.notes &&
-                                      ` (${ingredient.notes})`}
-                                  </span>
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
+                          {/* Recipe Ingredients */}
+                          {generatedMeal?.recipe.ingredients && (
+                            <div>
+                              <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                                Recipe Ingredients
+                              </h4>
+                              <ul className="space-y-1 text-xs sm:text-sm">
+                                {generatedMeal.recipe.ingredients.map(
+                                  (
+                                    ingredient: {
+                                      name: string;
+                                      amount: string;
+                                      unit?: string;
+                                      notes?: string;
+                                    },
+                                    index: number
+                                  ) => (
+                                    <li
+                                      key={index}
+                                      className="flex items-center space-x-2"
+                                    >
+                                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></div>
+                                      <span className="text-gray-700">
+                                        {ingredient.amount}{" "}
+                                        {ingredient.unit
+                                          ? `${ingredient.unit} `
+                                          : ""}
+                                        {ingredient.name}
+                                        {ingredient.notes &&
+                                          ` (${ingredient.notes})`}
+                                      </span>
+                                    </li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          )}
 
-                        <Separator />
+                          {/* Instructions */}
+                          {generatedMeal?.recipe.instructions && (
+                            <>
+                              <Separator />
+                              <div>
+                                <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                                  Instructions
+                                </h4>
+                                <ol className="space-y-2 text-xs sm:text-sm">
+                                  {generatedMeal.recipe.instructions.map(
+                                    (
+                                      instruction: {
+                                        stepNumber: number;
+                                        instruction: string;
+                                        timeMinutes?: number;
+                                      },
+                                      index: number
+                                    ) => (
+                                      <li
+                                        key={index}
+                                        className="flex items-start space-x-2"
+                                      >
+                                        <div className="w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
+                                          {instruction.stepNumber}
+                                        </div>
+                                        <span className="text-gray-700">
+                                          {instruction.instruction}
+                                        </span>
+                                      </li>
+                                    )
+                                  )}
+                                </ol>
+                              </div>
+                            </>
+                          )}
 
-                        {/* Instructions */}
-                        <div>
-                          <h4 className="font-semibold mb-2 text-sm sm:text-base">
-                            Instructions
-                          </h4>
-                          <ol className="space-y-2 text-xs sm:text-sm">
-                            {generatedMeal.recipe.instructions.map(
-                              (instruction, index) => (
-                                <li
-                                  key={index}
-                                  className="flex items-start space-x-2"
-                                >
-                                  <div className="w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
-                                    {instruction.stepNumber}
-                                  </div>
-                                  <span className="text-gray-700">
-                                    {instruction.instruction}
-                                  </span>
-                                </li>
-                              )
-                            )}
-                          </ol>
-                        </div>
-
-                        {/* Confidence Score */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">
-                              Recipe Match Confidence:
-                            </span>
-                            <span className="text-sm font-semibold text-purple-700">
-                              {Math.round(generatedMeal.confidence * 100)}%
-                            </span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+                          {/* Confidence Score */}
+                          {generatedMeal?.confidence !== undefined && (
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-700">
+                                  Recipe Match Confidence:
+                                </span>
+                                <span className="text-sm font-semibold text-purple-700">
+                                  {Math.round(generatedMeal.confidence * 100)}%
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
                 )}
               </div>
             </div>

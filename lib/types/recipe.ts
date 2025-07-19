@@ -1,7 +1,7 @@
 export interface RecipeIngredient {
   name: string;
   amount: string;
-  unit: string;
+  unit?: string;
   notes?: string;
 }
 
@@ -65,12 +65,14 @@ export const recipeIngredientSchema = z.object({
   amount: z
     .string()
     .min(1, "Amount is required")
-    .describe("The quantity of the ingredient (e.g., '2', '1/2', '1.5')"),
+    .describe(
+      "The quantity of the ingredient (e.g., '2', '1/2', '1.5', 'to taste')"
+    ),
   unit: z
     .string()
-    .min(1, "Unit is required")
+    .optional()
     .describe(
-      "The unit of measurement (e.g., 'cups', 'tablespoons', 'grams', 'pieces')"
+      "The unit of measurement (e.g., 'cups', 'tablespoons', 'grams', 'pieces'). Can be omitted for 'to taste' ingredients like salt and pepper."
     ),
   notes: z
     .string()

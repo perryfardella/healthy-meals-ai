@@ -1,10 +1,10 @@
 /**
  * Recipe Generator API Route
  *
- * Uses Vercel AI SDK v5 (beta) for streaming AI-powered recipe generation
+ * Uses Vercel AI SDK v5 (beta) for AI-powered recipe generation
  */
 
-import { streamObject } from "ai";
+import { generateObject } from "ai";
 import { recipeGenerationResponseSchema } from "@/lib/types/recipe";
 
 export async function POST(req: Request) {
@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     const userContent =
       messages.find((msg) => msg.role === "user")?.content || "";
 
-    // Stream the AI response with structured output
-    const result = await streamObject({
+    // Generate the AI response with structured output
+    const result = await generateObject({
       model: "openai/gpt-4o-mini",
       // TODO: Get a fallback working
       // providerOptions: {
@@ -84,7 +84,7 @@ Remember: This is for users who want to transform their pantry into healthy, del
         "A complete recipe with ingredients, instructions, nutrition, and metadata for healthy meal generation",
     });
 
-    return result.toTextStreamResponse();
+    return Response.json(result.object);
   } catch (error) {
     console.error("Recipe generation error:", error);
     return Response.json(
