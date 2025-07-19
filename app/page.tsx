@@ -42,6 +42,10 @@ import {
 const formSchema = z.object({
   ingredients: z
     .string()
+    .min(
+      1,
+      "Ingredients are required - please tell us what you have available!"
+    )
     .min(10, "Please enter at least 10 characters describing your ingredients")
     .max(500, "Ingredients description is too long"),
   includeExtraIngredients: z.boolean(),
@@ -364,13 +368,15 @@ export default function Home() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-base font-medium text-gray-700 mb-2 block">
-                              Ingredients
+                              Ingredients{" "}
+                              <span className="text-red-500 font-bold">*</span>
                             </FormLabel>
                             <FormControl>
                               <Textarea
                                 {...field}
-                                placeholder="e.g., chicken breast, quinoa, broccoli, olive oil, garlic, lemon..."
-                                className="w-full h-24 sm:h-32 resize-none text-sm sm:text-base bg-white/80 backdrop-blur-sm"
+                                placeholder="e.g., chicken breast, quinoa, broccoli, olive oil, garlic, lemon... (required)"
+                                className="w-full h-24 sm:h-32 resize-none text-sm sm:text-base bg-white/80 backdrop-blur-sm border-2 focus:border-purple-500"
+                                required
                               />
                             </FormControl>
                             <FormMessage />
@@ -380,20 +386,23 @@ export default function Home() {
 
                       <FormField
                         control={form.control}
-                        name="includeExtraIngredients"
+                        name="includeBasicIngredients"
                         render={({ field }) => (
-                          <FormItem className="flex items-center space-x-2">
+                          <FormItem
+                            className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 transition-colors cursor-pointer"
+                            onClick={() => field.onChange(!field.value)}
+                          >
                             <FormControl>
                               <input
                                 type="checkbox"
                                 checked={field.value}
                                 onChange={field.onChange}
-                                className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                className="w-4 h-4 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:border-blue-500 transition-all duration-200 cursor-pointer"
                               />
                             </FormControl>
-                            <Label className="text-sm">
-                              Include additional ingredients for creative
-                              suggestions
+                            <Label className="text-sm font-medium text-gray-700 cursor-pointer flex-1">
+                              Include basic ingredients (salt, pepper, oil,
+                              etc.)
                             </Label>
                           </FormItem>
                         )}
@@ -401,20 +410,23 @@ export default function Home() {
 
                       <FormField
                         control={form.control}
-                        name="includeBasicIngredients"
+                        name="includeExtraIngredients"
                         render={({ field }) => (
-                          <FormItem className="flex items-center space-x-2">
+                          <FormItem
+                            className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 transition-colors cursor-pointer"
+                            onClick={() => field.onChange(!field.value)}
+                          >
                             <FormControl>
                               <input
                                 type="checkbox"
                                 checked={field.value}
                                 onChange={field.onChange}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="w-4 h-4 rounded border-2 border-gray-300 text-green-600 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:border-green-500 transition-all duration-200 cursor-pointer"
                               />
                             </FormControl>
-                            <Label className="text-sm">
-                              Include basic ingredients (salt, pepper, oil,
-                              etc.)
+                            <Label className="text-sm font-medium text-gray-700 cursor-pointer flex-1">
+                              Include additional ingredients for creative
+                              suggestions
                             </Label>
                           </FormItem>
                         )}
@@ -726,29 +738,41 @@ export default function Home() {
                 </Card>
 
                 {/* Generate Button */}
-                <Button
-                  type="submit"
-                  disabled={isGenerating || !watchedValues.ingredients?.trim()}
-                  className="w-full h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-                >
-                  {isGenerating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      <span className="hidden sm:inline">
-                        Generating your meal...
-                      </span>
-                      <span className="sm:hidden">Generating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                      <span className="hidden sm:inline">
-                        Generate Healthy Meal
-                      </span>
-                      <span className="sm:hidden">Generate Meal</span>
-                    </>
+                <div className="relative group">
+                  <Button
+                    type="submit"
+                    disabled={
+                      isGenerating || !watchedValues.ingredients?.trim()
+                    }
+                    className="w-full h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <span className="hidden sm:inline">
+                          Generating your meal...
+                        </span>
+                        <span className="sm:hidden">Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                        <span className="hidden sm:inline">
+                          Generate Healthy Meal
+                        </span>
+                        <span className="sm:hidden">Generate Meal</span>
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Tooltip for disabled state */}
+                  {!isGenerating && !watchedValues.ingredients?.trim() && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                      Please add ingredients to generate a meal
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                    </div>
                   )}
-                </Button>
+                </div>
 
                 {/* Results Section */}
                 {generatedMeal && (
