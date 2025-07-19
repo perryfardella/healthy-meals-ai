@@ -342,9 +342,8 @@ export default function Home() {
             onSubmit={form.handleSubmit(generateMeal)}
             className="space-y-4 sm:space-y-6"
           >
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-              {/* Input Section */}
-              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+            <div className="max-w-4xl mx-auto">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Ingredients Input */}
                 <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-purple-500/10 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300">
                   <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg border-b border-purple-100/50 p-6">
@@ -750,125 +749,129 @@ export default function Home() {
                     </>
                   )}
                 </Button>
-              </div>
 
-              {/* Results Section */}
-              <div className="space-y-4 sm:space-y-6">
-                {/* Generated Meal */}
+                {/* Results Section */}
                 {generatedMeal && (
-                  <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
-                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
-                      <CardTitle className="flex items-center space-x-2 text-emerald-800">
-                        <ChefHat className="w-5 h-5 text-emerald-600" />
-                        <span>Your Generated Meal</span>
-                      </CardTitle>
-                    </div>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h3 className="font-semibold text-lg mb-2">
-                          {generatedMeal.name}
-                        </h3>
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {generatedMeal.tags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="text-xs"
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
+                  <div className="space-y-4 sm:space-y-6">
+                    {/* Generated Meal */}
+                    <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
+                      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
+                        <CardTitle className="flex items-center space-x-2 text-emerald-800">
+                          <ChefHat className="w-5 h-5 text-emerald-600" />
+                          <span>Your Generated Meal</span>
+                        </CardTitle>
                       </div>
-
-                      {/* Macros */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                        <div className="bg-blue-50 p-2 rounded">
-                          <div className="text-xs sm:text-sm font-semibold text-blue-700">
-                            {generatedMeal.macros.calories}
-                          </div>
-                          <div className="text-xs text-blue-600">Calories</div>
-                        </div>
-                        <div className="bg-green-50 p-2 rounded">
-                          <div className="text-xs sm:text-sm font-semibold text-green-700">
-                            {generatedMeal.macros.protein}g
-                          </div>
-                          <div className="text-xs text-green-600">Protein</div>
-                        </div>
-                        <div className="bg-yellow-50 p-2 rounded">
-                          <div className="text-xs sm:text-sm font-semibold text-yellow-700">
-                            {generatedMeal.macros.carbs}g
-                          </div>
-                          <div className="text-xs text-yellow-600">Carbs</div>
-                        </div>
-                        <div className="bg-red-50 p-2 rounded">
-                          <div className="text-xs sm:text-sm font-semibold text-red-700">
-                            {generatedMeal.macros.fat}g
-                          </div>
-                          <div className="text-xs text-red-600">Fat</div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600">
-                        <div className="flex items-center space-x-1">
-                          <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                          <span>{generatedMeal.prepTime}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                          <span>{generatedMeal.difficulty}</span>
-                        </div>
-                      </div>
-
-                      {/* Ingredients */}
-                      <div>
-                        <h4 className="font-semibold mb-2 text-sm sm:text-base">
-                          Ingredients
-                        </h4>
-                        <ul className="space-y-1 text-xs sm:text-sm">
-                          {generatedMeal.ingredients.map(
-                            (ingredient, index) => (
-                              <li
-                                key={index}
-                                className="flex items-center space-x-2"
+                      <CardContent className="space-y-4">
+                        <div>
+                          <h3 className="font-semibold text-lg mb-2">
+                            {generatedMeal.name}
+                          </h3>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {generatedMeal.tags.map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="secondary"
+                                className="text-xs"
                               >
-                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></div>
-                                <span className="text-gray-700">
-                                  {ingredient}
-                                </span>
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      </div>
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
 
-                      <Separator />
+                        {/* Macros */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                          <div className="bg-blue-50 p-2 rounded">
+                            <div className="text-xs sm:text-sm font-semibold text-blue-700">
+                              {generatedMeal.macros.calories}
+                            </div>
+                            <div className="text-xs text-blue-600">
+                              Calories
+                            </div>
+                          </div>
+                          <div className="bg-green-50 p-2 rounded">
+                            <div className="text-xs sm:text-sm font-semibold text-green-700">
+                              {generatedMeal.macros.protein}g
+                            </div>
+                            <div className="text-xs text-green-600">
+                              Protein
+                            </div>
+                          </div>
+                          <div className="bg-yellow-50 p-2 rounded">
+                            <div className="text-xs sm:text-sm font-semibold text-yellow-700">
+                              {generatedMeal.macros.carbs}g
+                            </div>
+                            <div className="text-xs text-yellow-600">Carbs</div>
+                          </div>
+                          <div className="bg-red-50 p-2 rounded">
+                            <div className="text-xs sm:text-sm font-semibold text-red-700">
+                              {generatedMeal.macros.fat}g
+                            </div>
+                            <div className="text-xs text-red-600">Fat</div>
+                          </div>
+                        </div>
 
-                      {/* Instructions */}
-                      <div>
-                        <h4 className="font-semibold mb-2 text-sm sm:text-base">
-                          Instructions
-                        </h4>
-                        <ol className="space-y-2 text-xs sm:text-sm">
-                          {generatedMeal.instructions.map(
-                            (instruction, index) => (
-                              <li
-                                key={index}
-                                className="flex items-start space-x-2"
-                              >
-                                <div className="w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
-                                  {index + 1}
-                                </div>
-                                <span className="text-gray-700">
-                                  {instruction}
-                                </span>
-                              </li>
-                            )
-                          )}
-                        </ol>
-                      </div>
-                    </CardContent>
-                  </Card>
+                        <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600">
+                          <div className="flex items-center space-x-1">
+                            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <span>{generatedMeal.prepTime}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <span>{generatedMeal.difficulty}</span>
+                          </div>
+                        </div>
+
+                        {/* Ingredients */}
+                        <div>
+                          <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                            Ingredients
+                          </h4>
+                          <ul className="space-y-1 text-xs sm:text-sm">
+                            {generatedMeal.ingredients.map(
+                              (ingredient, index) => (
+                                <li
+                                  key={index}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></div>
+                                  <span className="text-gray-700">
+                                    {ingredient}
+                                  </span>
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+
+                        <Separator />
+
+                        {/* Instructions */}
+                        <div>
+                          <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                            Instructions
+                          </h4>
+                          <ol className="space-y-2 text-xs sm:text-sm">
+                            {generatedMeal.instructions.map(
+                              (instruction, index) => (
+                                <li
+                                  key={index}
+                                  className="flex items-start space-x-2"
+                                >
+                                  <div className="w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
+                                    {index + 1}
+                                  </div>
+                                  <span className="text-gray-700">
+                                    {instruction}
+                                  </span>
+                                </li>
+                              )
+                            )}
+                          </ol>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 )}
               </div>
             </div>
