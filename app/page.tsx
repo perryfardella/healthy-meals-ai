@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,6 +14,15 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Utensils,
   Heart,
@@ -22,7 +34,24 @@ import {
   Shield,
   ShoppingCart,
   ChefHat,
+  Eye,
+  EyeOff,
 } from "lucide-react";
+
+// Form validation schema
+const formSchema = z.object({
+  ingredients: z
+    .string()
+    .min(10, "Please enter at least 10 characters describing your ingredients")
+    .max(500, "Ingredients description is too long"),
+  includeExtraIngredients: z.boolean(),
+  dietaryPreferences: z.array(z.string()),
+  customPreferences: z.array(z.string()),
+  allergies: z.array(z.string()),
+  customAllergies: z.array(z.string()),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 interface DietaryPreference {
   id: string;
@@ -76,69 +105,96 @@ const commonAllergies: Allergy[] = [
 ];
 
 export default function Home() {
-  const [ingredients, setIngredients] = useState<string>("");
-  const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
-  const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
-  const [customPreferences, setCustomPreferences] = useState<string[]>([]);
-  const [customAllergies, setCustomAllergies] = useState<string[]>([]);
   const [newPreference, setNewPreference] = useState<string>("");
   const [newAllergy, setNewAllergy] = useState<string>("");
-  const [includeExtraIngredients, setIncludeExtraIngredients] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedMeal, setGeneratedMeal] = useState<GeneratedMeal | null>(
     null
   );
-  const [tokensBalance, setTokensBalance] = useState(5); // Free generations for new users
+  const [tokensBalance, setTokensBalance] = useState(5);
   const [freeGenerationsLeft, setFreeGenerationsLeft] = useState(5);
+  const [showAIPayload, setShowAIPayload] = useState(false);
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      ingredients: "",
+      includeExtraIngredients: false,
+      dietaryPreferences: [],
+      customPreferences: [],
+      allergies: [],
+      customAllergies: [],
+    },
+  });
+
+  const { watch, setValue, getValues } = form;
+  const watchedValues = watch();
 
   const togglePreference = (preferenceId: string) => {
-    setSelectedPreferences((prev) =>
-      prev.includes(preferenceId)
-        ? prev.filter((id) => id !== preferenceId)
-        : [...prev, preferenceId]
-    );
+    const currentPreferences = getValues("dietaryPreferences");
+    const newPreferences = currentPreferences.includes(preferenceId)
+      ? currentPreferences.filter((id) => id !== preferenceId)
+      : [...currentPreferences, preferenceId];
+    setValue("dietaryPreferences", newPreferences);
   };
 
   const toggleAllergy = (allergyId: string) => {
-    setSelectedAllergies((prev) =>
-      prev.includes(allergyId)
-        ? prev.filter((id) => id !== allergyId)
-        : [...prev, allergyId]
-    );
+    const currentAllergies = getValues("allergies");
+    const newAllergies = currentAllergies.includes(allergyId)
+      ? currentAllergies.filter((id) => id !== allergyId)
+      : [...currentAllergies, allergyId];
+    setValue("allergies", newAllergies);
   };
 
   const addCustomPreference = () => {
     if (
       newPreference.trim() &&
-      !customPreferences.includes(newPreference.trim())
+      !getValues("customPreferences").includes(newPreference.trim())
     ) {
-      setCustomPreferences((prev) => [...prev, newPreference.trim()]);
+      const currentCustomPreferences = getValues("customPreferences");
+      setValue("customPreferences", [
+        ...currentCustomPreferences,
+        newPreference.trim(),
+      ]);
       setNewPreference("");
     }
   };
 
   const removeCustomPreference = (preference: string) => {
-    setCustomPreferences((prev) => prev.filter((p) => p !== preference));
+    const currentCustomPreferences = getValues("customPreferences");
+    setValue(
+      "customPreferences",
+      currentCustomPreferences.filter((p) => p !== preference)
+    );
   };
 
   const addCustomAllergy = () => {
-    if (newAllergy.trim() && !customAllergies.includes(newAllergy.trim())) {
-      setCustomAllergies((prev) => [...prev, newAllergy.trim()]);
+    if (
+      newAllergy.trim() &&
+      !getValues("customAllergies").includes(newAllergy.trim())
+    ) {
+      const currentCustomAllergies = getValues("customAllergies");
+      setValue("customAllergies", [
+        ...currentCustomAllergies,
+        newAllergy.trim(),
+      ]);
       setNewAllergy("");
     }
   };
 
   const removeCustomAllergy = (allergy: string) => {
-    setCustomAllergies((prev) => prev.filter((a) => a !== allergy));
+    const currentCustomAllergies = getValues("customAllergies");
+    setValue(
+      "customAllergies",
+      currentCustomAllergies.filter((a) => a !== allergy)
+    );
   };
 
-  const generateMeal = async () => {
-    if (!ingredients.trim()) {
-      alert("Please enter some ingredients!");
-      return;
-    }
-
+  const generateMeal = async (data: FormData) => {
     setIsGenerating(true);
+
+    // Log the form data being sent to AI
+    console.log("Form data being sent to AI:", data);
 
     // Simulate API call
     setTimeout(() => {
@@ -188,8 +244,35 @@ export default function Home() {
   };
 
   const purchaseTokens = () => {
-    // This would integrate with Lemon Squeezy
     alert("Redirecting to Lemon Squeezy for token purchase...");
+  };
+
+  // Create the AI payload that would be sent
+  const createAIPayload = (data: FormData) => {
+    const selectedPreferenceLabels = data.dietaryPreferences
+      .map((id) => dietaryPreferences.find((p) => p.id === id)?.label)
+      .filter(Boolean);
+
+    const selectedAllergyLabels = data.allergies
+      .map((id) => commonAllergies.find((a) => id === a.id)?.label)
+      .filter(Boolean);
+
+    return {
+      ingredients: data.ingredients,
+      includeExtraIngredients: data.includeExtraIngredients,
+      dietaryPreferences: [
+        ...selectedPreferenceLabels,
+        ...data.customPreferences,
+      ],
+      allergies: [...selectedAllergyLabels, ...data.customAllergies],
+      timestamp: new Date().toISOString(),
+      userPreferences: {
+        includeNutritionalInfo: true,
+        includePrepTime: true,
+        includeDifficulty: true,
+        includeTags: true,
+      },
+    };
   };
 
   return (
@@ -214,387 +297,483 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-          {/* Input Section */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-            {/* Ingredients Input */}
-            <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-purple-500/10 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300">
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg border-b border-purple-100/50 p-6">
-                <CardTitle className="flex items-center space-x-2 text-purple-800">
-                  <Utensils className="w-5 h-5 text-purple-600" />
-                  <span>What&apos;s in your kitchen?</span>
-                </CardTitle>
-                <CardDescription className="text-purple-600/80">
-                  List the ingredients you have available. Be as specific as
-                  possible for better results.
-                </CardDescription>
-              </div>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label
-                      htmlFor="ingredients"
-                      className="text-base font-medium text-gray-700 mb-2 block"
-                    >
-                      Ingredients
-                    </Label>
-                    <textarea
-                      id="ingredients"
-                      value={ingredients}
-                      onChange={(e) => setIngredients(e.target.value)}
-                      placeholder="e.g., chicken breast, quinoa, broccoli, olive oil, garlic, lemon..."
-                      className="w-full h-24 sm:h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm sm:text-base bg-white/80 backdrop-blur-sm"
-                    />
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(generateMeal)}
+            className="space-y-4 sm:space-y-6"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+              {/* Input Section */}
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+                {/* Ingredients Input */}
+                <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-purple-500/10 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300">
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg border-b border-purple-100/50 p-6">
+                    <CardTitle className="flex items-center space-x-2 text-purple-800">
+                      <Utensils className="w-5 h-5 text-purple-600" />
+                      <span>What&apos;s in your kitchen?</span>
+                    </CardTitle>
+                    <CardDescription className="text-purple-600/80">
+                      List the ingredients you have available. Be as specific as
+                      possible for better results.
+                    </CardDescription>
                   </div>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="ingredients"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-base font-medium text-gray-700 mb-2 block">
+                              Ingredients
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder="e.g., chicken breast, quinoa, broccoli, olive oil, garlic, lemon..."
+                                className="w-full h-24 sm:h-32 resize-none text-sm sm:text-base bg-white/80 backdrop-blur-sm"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="include-extra"
-                      checked={includeExtraIngredients}
-                      onChange={(e) =>
-                        setIncludeExtraIngredients(e.target.checked)
-                      }
-                      className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                    />
-                    <Label htmlFor="include-extra" className="text-sm">
-                      Include additional ingredients for creative suggestions
-                    </Label>
+                      <FormField
+                        control={form.control}
+                        name="includeExtraIngredients"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                              />
+                            </FormControl>
+                            <Label className="text-sm">
+                              Include additional ingredients for creative
+                              suggestions
+                            </Label>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Dietary Preferences */}
+                <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-green-500/10 hover:shadow-2xl hover:shadow-green-500/20 transition-all duration-300">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg border-b border-green-100/50 p-6">
+                    <CardTitle className="flex items-center space-x-2 text-green-800">
+                      <Heart className="w-5 h-5 text-green-600" />
+                      <span>Dietary Preferences</span>
+                    </CardTitle>
+                    <CardDescription className="text-green-600/80">
+                      Select your dietary preferences to get personalized meal
+                      suggestions.
+                    </CardDescription>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Dietary Preferences */}
-            <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-green-500/10 hover:shadow-2xl hover:shadow-green-500/20 transition-all duration-300">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg border-b border-green-100/50 p-6">
-                <CardTitle className="flex items-center space-x-2 text-green-800">
-                  <Heart className="w-5 h-5 text-green-600" />
-                  <span>Dietary Preferences</span>
-                </CardTitle>
-                <CardDescription className="text-green-600/80">
-                  Select your dietary preferences to get personalized meal
-                  suggestions.
-                </CardDescription>
-              </div>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                    {dietaryPreferences.map((preference) => (
-                      <Button
-                        key={preference.id}
-                        variant={
-                          selectedPreferences.includes(preference.id)
-                            ? "default"
-                            : "outline"
-                        }
-                        size="sm"
-                        onClick={() => togglePreference(preference.id)}
-                        className="justify-start text-xs sm:text-sm"
-                      >
-                        {preference.icon}
-                        <span className="ml-1 sm:ml-2">{preference.label}</span>
-                      </Button>
-                    ))}
-                  </div>
-
-                  {/* Custom Preferences */}
-                  {customPreferences.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-gray-700">
-                        Custom Preferences:
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {customPreferences.map((preference) => (
-                          <div
-                            key={preference}
-                            className="flex items-center space-x-1 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs"
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                        {dietaryPreferences.map((preference) => (
+                          <Button
+                            key={preference.id}
+                            type="button"
+                            variant={
+                              watchedValues.dietaryPreferences?.includes(
+                                preference.id
+                              )
+                                ? "default"
+                                : "outline"
+                            }
+                            size="sm"
+                            onClick={() => togglePreference(preference.id)}
+                            className="justify-start text-xs sm:text-sm"
                           >
-                            <span>{preference}</span>
-                            <button
-                              onClick={() => removeCustomPreference(preference)}
-                              className="text-green-600 hover:text-green-800 ml-1"
-                            >
-                              ×
-                            </button>
-                          </div>
+                            {preference.icon}
+                            <span className="ml-1 sm:ml-2">
+                              {preference.label}
+                            </span>
+                          </Button>
                         ))}
                       </div>
-                    </div>
-                  )}
 
-                  {/* Add Custom Preference */}
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={newPreference}
-                      onChange={(e) => setNewPreference(e.target.value)}
-                      placeholder="Add custom preference..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent h-9"
-                      onKeyPress={(e) =>
-                        e.key === "Enter" && addCustomPreference()
-                      }
-                    />
-                    <Button
-                      onClick={addCustomPreference}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white h-9 px-4"
-                    >
-                      Add
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Allergies */}
-            <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-orange-500/10 hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-300">
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-t-lg border-b border-orange-100/50 p-6">
-                <CardTitle className="flex items-center space-x-2 text-orange-800">
-                  <Shield className="w-5 h-5 text-orange-600" />
-                  <span>Allergies & Intolerances</span>
-                </CardTitle>
-                <CardDescription className="text-orange-600/80">
-                  Select any ingredients you need to avoid for safety.
-                </CardDescription>
-              </div>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                    {commonAllergies.map((allergy) => (
-                      <Button
-                        key={allergy.id}
-                        variant={
-                          selectedAllergies.includes(allergy.id)
-                            ? "destructive"
-                            : "outline"
-                        }
-                        size="sm"
-                        onClick={() => toggleAllergy(allergy.id)}
-                        className="text-xs sm:text-sm"
-                      >
-                        {allergy.label}
-                      </Button>
-                    ))}
-                  </div>
-
-                  {/* Custom Allergies */}
-                  {customAllergies.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-gray-700">
-                        Custom Allergies:
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {customAllergies.map((allergy) => (
-                          <div
-                            key={allergy}
-                            className="flex items-center space-x-1 bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs"
-                          >
-                            <span>{allergy}</span>
-                            <button
-                              onClick={() => removeCustomAllergy(allergy)}
-                              className="text-orange-600 hover:text-orange-800 ml-1"
-                            >
-                              ×
-                            </button>
+                      {/* Custom Preferences */}
+                      {watchedValues.customPreferences &&
+                        watchedValues.customPreferences.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-gray-700">
+                              Custom Preferences:
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {watchedValues.customPreferences.map(
+                                (preference) => (
+                                  <div
+                                    key={preference}
+                                    className="flex items-center space-x-1 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs"
+                                  >
+                                    <span>{preference}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        removeCustomPreference(preference)
+                                      }
+                                      className="text-green-600 hover:text-green-800 ml-1"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                )
+                              )}
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                        )}
 
-                  {/* Add Custom Allergy */}
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={newAllergy}
-                      onChange={(e) => setNewAllergy(e.target.value)}
-                      placeholder="Add custom allergy..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent h-9"
-                      onKeyPress={(e) =>
-                        e.key === "Enter" && addCustomAllergy()
-                      }
-                    />
-                    <Button
-                      onClick={addCustomAllergy}
-                      size="sm"
-                      className="bg-orange-600 hover:bg-orange-700 text-white h-9 px-4"
-                    >
-                      Add
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Generate Button */}
-            <Button
-              onClick={generateMeal}
-              disabled={isGenerating || !ingredients.trim()}
-              className="w-full h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  <span className="hidden sm:inline">
-                    Generating your meal...
-                  </span>
-                  <span className="sm:hidden">Generating...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  <span className="hidden sm:inline">
-                    Generate Healthy Meal
-                  </span>
-                  <span className="sm:hidden">Generate Meal</span>
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Results Section */}
-          <div className="space-y-4 sm:space-y-6">
-            {/* Token Info */}
-            <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
-              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg border-b border-blue-100/50 p-6">
-                <CardTitle className="text-lg text-blue-800">
-                  Your Balance
-                </CardTitle>
-              </div>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">
-                      Free Generations
-                    </span>
-                    <Badge variant="secondary">{freeGenerationsLeft}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Paid Tokens</span>
-                    <Badge variant="outline">{tokensBalance}</Badge>
-                  </div>
-                  <Separator />
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-2">
-                      100 tokens = $1
-                    </p>
-                    <Button
-                      onClick={purchaseTokens}
-                      size="sm"
-                      className="w-full text-xs sm:text-sm"
-                    >
-                      <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Buy More Tokens</span>
-                      <span className="sm:hidden">Buy Tokens</span>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Generated Meal */}
-            {generatedMeal && (
-              <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
-                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
-                  <CardTitle className="flex items-center space-x-2 text-emerald-800">
-                    <ChefHat className="w-5 h-5 text-emerald-600" />
-                    <span>Your Generated Meal</span>
-                  </CardTitle>
-                </div>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">
-                      {generatedMeal.name}
-                    </h3>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {generatedMeal.tags.map((tag) => (
-                        <Badge
-                          key={tag}
-                          variant="secondary"
-                          className="text-xs"
+                      {/* Add Custom Preference */}
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={newPreference}
+                          onChange={(e) => setNewPreference(e.target.value)}
+                          placeholder="Add custom preference..."
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent h-9"
+                          onKeyPress={(e) =>
+                            e.key === "Enter" && addCustomPreference()
+                          }
+                        />
+                        <Button
+                          type="button"
+                          onClick={addCustomPreference}
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white h-9 px-4"
                         >
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Macros */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                    <div className="bg-blue-50 p-2 rounded">
-                      <div className="text-xs sm:text-sm font-semibold text-blue-700">
-                        {generatedMeal.macros.calories}
+                          Add
+                        </Button>
                       </div>
-                      <div className="text-xs text-blue-600">Calories</div>
                     </div>
-                    <div className="bg-green-50 p-2 rounded">
-                      <div className="text-xs sm:text-sm font-semibold text-green-700">
-                        {generatedMeal.macros.protein}g
-                      </div>
-                      <div className="text-xs text-green-600">Protein</div>
-                    </div>
-                    <div className="bg-yellow-50 p-2 rounded">
-                      <div className="text-xs sm:text-sm font-semibold text-yellow-700">
-                        {generatedMeal.macros.carbs}g
-                      </div>
-                      <div className="text-xs text-yellow-600">Carbs</div>
-                    </div>
-                    <div className="bg-red-50 p-2 rounded">
-                      <div className="text-xs sm:text-sm font-semibold text-red-700">
-                        {generatedMeal.macros.fat}g
-                      </div>
-                      <div className="text-xs text-red-600">Fat</div>
-                    </div>
-                  </div>
+                  </CardContent>
+                </Card>
 
-                  <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span>{generatedMeal.prepTime}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span>{generatedMeal.difficulty}</span>
-                    </div>
+                {/* Allergies */}
+                <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-orange-500/10 hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-300">
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-t-lg border-b border-orange-100/50 p-6">
+                    <CardTitle className="flex items-center space-x-2 text-orange-800">
+                      <Shield className="w-5 h-5 text-orange-600" />
+                      <span>Allergies & Intolerances</span>
+                    </CardTitle>
+                    <CardDescription className="text-orange-600/80">
+                      Select any ingredients you need to avoid for safety.
+                    </CardDescription>
                   </div>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                        {commonAllergies.map((allergy) => (
+                          <Button
+                            key={allergy.id}
+                            type="button"
+                            variant={
+                              watchedValues.allergies?.includes(allergy.id)
+                                ? "destructive"
+                                : "outline"
+                            }
+                            size="sm"
+                            onClick={() => toggleAllergy(allergy.id)}
+                            className="text-xs sm:text-sm"
+                          >
+                            {allergy.label}
+                          </Button>
+                        ))}
+                      </div>
 
-                  {/* Ingredients */}
-                  <div>
-                    <h4 className="font-semibold mb-2 text-sm sm:text-base">
-                      Ingredients
-                    </h4>
-                    <ul className="space-y-1 text-xs sm:text-sm">
-                      {generatedMeal.ingredients.map((ingredient, index) => (
-                        <li key={index} className="flex items-center space-x-2">
-                          <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
-                          <span>{ingredient}</span>
-                        </li>
-                      ))}
-                    </ul>
+                      {/* Custom Allergies */}
+                      {watchedValues.customAllergies &&
+                        watchedValues.customAllergies.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-gray-700">
+                              Custom Allergies:
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {watchedValues.customAllergies.map((allergy) => (
+                                <div
+                                  key={allergy}
+                                  className="flex items-center space-x-1 bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs"
+                                >
+                                  <span>{allergy}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCustomAllergy(allergy)}
+                                    className="text-orange-600 hover:text-orange-800 ml-1"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                      {/* Add Custom Allergy */}
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={newAllergy}
+                          onChange={(e) => setNewAllergy(e.target.value)}
+                          placeholder="Add custom allergy..."
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent h-9"
+                          onKeyPress={(e) =>
+                            e.key === "Enter" && addCustomAllergy()
+                          }
+                        />
+                        <Button
+                          type="button"
+                          onClick={addCustomAllergy}
+                          size="sm"
+                          className="bg-orange-600 hover:bg-orange-700 text-white h-9 px-4"
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* AI Payload Preview */}
+                <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
+                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg border-b border-blue-100/50 p-6">
+                    <CardTitle className="flex items-center space-x-2 text-blue-800">
+                      <Eye className="w-5 h-5 text-blue-600" />
+                      <span>AI Request Preview</span>
+                    </CardTitle>
+                    <CardDescription className="text-blue-600/80">
+                      See what data will be sent to the AI for meal generation.
+                    </CardDescription>
                   </div>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAIPayload(!showAIPayload)}
+                        className="w-full"
+                      >
+                        {showAIPayload ? (
+                          <>
+                            <EyeOff className="w-4 h-4 mr-2" />
+                            Hide AI Payload
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Show AI Payload
+                          </>
+                        )}
+                      </Button>
 
-                  {/* Instructions */}
-                  <div>
-                    <h4 className="font-semibold mb-2 text-sm sm:text-base">
-                      Instructions
-                    </h4>
-                    <ol className="space-y-2 text-xs sm:text-sm">
-                      {generatedMeal.instructions.map((instruction, index) => (
-                        <li key={index} className="flex space-x-2">
-                          <span className="font-semibold text-green-600 min-w-[16px] sm:min-w-[20px] flex-shrink-0">
-                            {index + 1}.
+                      {showAIPayload && (
+                        <div className="bg-gray-50 p-4 rounded-lg border">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">
+                            Data to be sent to AI:
+                          </h4>
+                          <pre className="text-xs text-gray-600 whitespace-pre-wrap overflow-auto max-h-64">
+                            {JSON.stringify(
+                              createAIPayload(watchedValues),
+                              null,
+                              2
+                            )}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Generate Button */}
+                <Button
+                  type="submit"
+                  disabled={isGenerating || !watchedValues.ingredients?.trim()}
+                  className="w-full h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <span className="hidden sm:inline">
+                        Generating your meal...
+                      </span>
+                      <span className="sm:hidden">Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                      <span className="hidden sm:inline">
+                        Generate Healthy Meal
+                      </span>
+                      <span className="sm:hidden">Generate Meal</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Results Section */}
+              <div className="space-y-4 sm:space-y-6">
+                {/* Token Info */}
+                <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
+                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg border-b border-blue-100/50 p-6">
+                    <CardTitle className="text-lg text-blue-800">
+                      Your Balance
+                    </CardTitle>
+                  </div>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">
+                          Free Generations
+                        </span>
+                        <Badge variant="secondary">{freeGenerationsLeft}</Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">
+                          Paid Tokens
+                        </span>
+                        <Badge variant="outline">{tokensBalance}</Badge>
+                      </div>
+                      <Separator />
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-2">
+                          100 tokens = $1
+                        </p>
+                        <Button
+                          type="button"
+                          onClick={purchaseTokens}
+                          size="sm"
+                          className="w-full text-xs sm:text-sm"
+                        >
+                          <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                          <span className="hidden sm:inline">
+                            Buy More Tokens
                           </span>
-                          <span>{instruction}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
+                          <span className="sm:hidden">Buy Tokens</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Generated Meal */}
+                {generatedMeal && (
+                  <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
+                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
+                      <CardTitle className="flex items-center space-x-2 text-emerald-800">
+                        <ChefHat className="w-5 h-5 text-emerald-600" />
+                        <span>Your Generated Meal</span>
+                      </CardTitle>
+                    </div>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">
+                          {generatedMeal.name}
+                        </h3>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {generatedMeal.tags.map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Macros */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                        <div className="bg-blue-50 p-2 rounded">
+                          <div className="text-xs sm:text-sm font-semibold text-blue-700">
+                            {generatedMeal.macros.calories}
+                          </div>
+                          <div className="text-xs text-blue-600">Calories</div>
+                        </div>
+                        <div className="bg-green-50 p-2 rounded">
+                          <div className="text-xs sm:text-sm font-semibold text-green-700">
+                            {generatedMeal.macros.protein}g
+                          </div>
+                          <div className="text-xs text-green-600">Protein</div>
+                        </div>
+                        <div className="bg-yellow-50 p-2 rounded">
+                          <div className="text-xs sm:text-sm font-semibold text-yellow-700">
+                            {generatedMeal.macros.carbs}g
+                          </div>
+                          <div className="text-xs text-yellow-600">Carbs</div>
+                        </div>
+                        <div className="bg-red-50 p-2 rounded">
+                          <div className="text-xs sm:text-sm font-semibold text-red-700">
+                            {generatedMeal.macros.fat}g
+                          </div>
+                          <div className="text-xs text-red-600">Fat</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600">
+                        <div className="flex items-center space-x-1">
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span>{generatedMeal.prepTime}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span>{generatedMeal.difficulty}</span>
+                        </div>
+                      </div>
+
+                      {/* Ingredients */}
+                      <div>
+                        <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                          Ingredients
+                        </h4>
+                        <ul className="space-y-1 text-xs sm:text-sm">
+                          {generatedMeal.ingredients.map(
+                            (ingredient, index) => (
+                              <li
+                                key={index}
+                                className="flex items-center space-x-2"
+                              >
+                                <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                                <span>{ingredient}</span>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+
+                      {/* Instructions */}
+                      <div>
+                        <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                          Instructions
+                        </h4>
+                        <ol className="space-y-2 text-xs sm:text-sm">
+                          {generatedMeal.instructions.map(
+                            (instruction, index) => (
+                              <li key={index} className="flex space-x-2">
+                                <span className="font-semibold text-green-600 min-w-[16px] sm:min-w-[20px] flex-shrink-0">
+                                  {index + 1}.
+                                </span>
+                                <span>{instruction}</span>
+                              </li>
+                            )
+                          )}
+                        </ol>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </form>
+        </Form>
       </main>
     </div>
   );
