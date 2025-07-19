@@ -32,10 +32,10 @@ import {
   Sparkles,
   Leaf,
   Shield,
-  ShoppingCart,
   ChefHat,
-  Eye,
-  EyeOff,
+  Sun,
+  Moon,
+  Coffee,
 } from "lucide-react";
 
 // Form validation schema
@@ -45,10 +45,15 @@ const formSchema = z.object({
     .min(10, "Please enter at least 10 characters describing your ingredients")
     .max(500, "Ingredients description is too long"),
   includeExtraIngredients: z.boolean(),
+  includeBasicIngredients: z.boolean(),
   dietaryPreferences: z.array(z.string()),
   customPreferences: z.array(z.string()),
   allergies: z.array(z.string()),
   customAllergies: z.array(z.string()),
+  maxCookingTime: z.string(),
+  mealType: z.array(z.string()),
+  servingSize: z.string(),
+  difficultyLevel: z.string(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -62,6 +67,30 @@ interface DietaryPreference {
 interface Allergy {
   id: string;
   label: string;
+}
+
+interface MealType {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
+interface CookingTime {
+  id: string;
+  label: string;
+  value: string;
+}
+
+interface ServingSize {
+  id: string;
+  label: string;
+  value: string;
+}
+
+interface DifficultyLevel {
+  id: string;
+  label: string;
+  value: string;
 }
 
 interface GeneratedMeal {
@@ -104,6 +133,37 @@ const commonAllergies: Allergy[] = [
   { id: "fish", label: "Fish" },
 ];
 
+const mealTypes: MealType[] = [
+  { id: "breakfast", label: "Breakfast", icon: <Sun className="w-4 h-4" /> },
+  { id: "lunch", label: "Lunch", icon: <Utensils className="w-4 h-4" /> },
+  { id: "dinner", label: "Dinner", icon: <Moon className="w-4 h-4" /> },
+  { id: "snack", label: "Snack", icon: <Coffee className="w-4 h-4" /> },
+  { id: "dessert", label: "Dessert", icon: <Heart className="w-4 h-4" /> },
+];
+
+const cookingTimes: CookingTime[] = [
+  { id: "15min", label: "15 minutes", value: "15" },
+  { id: "30min", label: "30 minutes", value: "30" },
+  { id: "45min", label: "45 minutes", value: "45" },
+  { id: "60min", label: "1 hour", value: "60" },
+  { id: "90min", label: "1.5 hours", value: "90" },
+  { id: "120min", label: "2+ hours", value: "120" },
+];
+
+const servingSizes: ServingSize[] = [
+  { id: "1", label: "1 serving", value: "1" },
+  { id: "2", label: "2 servings", value: "2" },
+  { id: "4", label: "4 servings", value: "4" },
+  { id: "6", label: "6 servings", value: "6" },
+  { id: "8", label: "8+ servings", value: "8" },
+];
+
+const difficultyLevels: DifficultyLevel[] = [
+  { id: "easy", label: "Easy", value: "easy" },
+  { id: "medium", label: "Medium", value: "medium" },
+  { id: "hard", label: "Hard", value: "hard" },
+];
+
 export default function Home() {
   const [newPreference, setNewPreference] = useState<string>("");
   const [newAllergy, setNewAllergy] = useState<string>("");
@@ -111,19 +171,21 @@ export default function Home() {
   const [generatedMeal, setGeneratedMeal] = useState<GeneratedMeal | null>(
     null
   );
-  const [tokensBalance, setTokensBalance] = useState(5);
-  const [freeGenerationsLeft, setFreeGenerationsLeft] = useState(5);
-  const [showAIPayload, setShowAIPayload] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       ingredients: "",
       includeExtraIngredients: false,
+      includeBasicIngredients: false,
       dietaryPreferences: [],
       customPreferences: [],
       allergies: [],
       customAllergies: [],
+      maxCookingTime: "",
+      mealType: [],
+      servingSize: "",
+      difficultyLevel: "",
     },
   });
 
@@ -190,11 +252,28 @@ export default function Home() {
     );
   };
 
-  const generateMeal = async (data: FormData) => {
-    setIsGenerating(true);
+  const toggleMealType = (mealTypeId: string) => {
+    const currentMealTypes = getValues("mealType");
+    const newMealTypes = currentMealTypes.includes(mealTypeId)
+      ? currentMealTypes.filter((id) => id !== mealTypeId)
+      : [...currentMealTypes, mealTypeId];
+    setValue("mealType", newMealTypes);
+  };
 
-    // Log the form data being sent to AI
-    console.log("Form data being sent to AI:", data);
+  const setCookingTime = (timeValue: string) => {
+    setValue("maxCookingTime", timeValue);
+  };
+
+  const setServingSize = (sizeValue: string) => {
+    setValue("servingSize", sizeValue);
+  };
+
+  const setDifficultyLevel = (levelValue: string) => {
+    setValue("difficultyLevel", levelValue);
+  };
+
+  const generateMeal = async () => {
+    setIsGenerating(true);
 
     // Simulate API call
     setTimeout(() => {
@@ -233,46 +312,7 @@ export default function Home() {
 
       setGeneratedMeal(mockMeal);
       setIsGenerating(false);
-
-      // Deduct token/free generation
-      if (freeGenerationsLeft > 0) {
-        setFreeGenerationsLeft((prev) => prev - 1);
-      } else {
-        setTokensBalance((prev) => prev - 1);
-      }
     }, 2000);
-  };
-
-  const purchaseTokens = () => {
-    alert("Redirecting to Lemon Squeezy for token purchase...");
-  };
-
-  // Create the AI payload that would be sent
-  const createAIPayload = (data: FormData) => {
-    const selectedPreferenceLabels = data.dietaryPreferences
-      .map((id) => dietaryPreferences.find((p) => p.id === id)?.label)
-      .filter(Boolean);
-
-    const selectedAllergyLabels = data.allergies
-      .map((id) => commonAllergies.find((a) => id === a.id)?.label)
-      .filter(Boolean);
-
-    return {
-      ingredients: data.ingredients,
-      includeExtraIngredients: data.includeExtraIngredients,
-      dietaryPreferences: [
-        ...selectedPreferenceLabels,
-        ...data.customPreferences,
-      ],
-      allergies: [...selectedAllergyLabels, ...data.customAllergies],
-      timestamp: new Date().toISOString(),
-      userPreferences: {
-        includeNutritionalInfo: true,
-        includePrepTime: true,
-        includeDifficulty: true,
-        includeTags: true,
-      },
-    };
   };
 
   return (
@@ -359,6 +399,27 @@ export default function Home() {
                           </FormItem>
                         )}
                       />
+
+                      <FormField
+                        control={form.control}
+                        name="includeBasicIngredients"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                            </FormControl>
+                            <Label className="text-sm">
+                              Include basic ingredients (salt, pepper, oil,
+                              etc.)
+                            </Label>
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -439,16 +500,19 @@ export default function Home() {
                           value={newPreference}
                           onChange={(e) => setNewPreference(e.target.value)}
                           placeholder="Add custom preference..."
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent h-9"
-                          onKeyPress={(e) =>
-                            e.key === "Enter" && addCustomPreference()
-                          }
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addCustomPreference();
+                            }
+                          }}
                         />
                         <Button
                           type="button"
                           onClick={addCustomPreference}
                           size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white h-9 px-4"
+                          className="text-xs sm:text-sm"
                         >
                           Add
                         </Button>
@@ -458,19 +522,19 @@ export default function Home() {
                 </Card>
 
                 {/* Allergies */}
-                <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-orange-500/10 hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-300">
-                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-t-lg border-b border-orange-100/50 p-6">
-                    <CardTitle className="flex items-center space-x-2 text-orange-800">
-                      <Shield className="w-5 h-5 text-orange-600" />
-                      <span>Allergies & Intolerances</span>
+                <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-red-500/10 hover:shadow-2xl hover:shadow-red-500/20 transition-all duration-300">
+                  <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-t-lg border-b border-red-100/50 p-6">
+                    <CardTitle className="flex items-center space-x-2 text-red-800">
+                      <Shield className="w-5 h-5 text-red-600" />
+                      <span>Allergies & Restrictions</span>
                     </CardTitle>
-                    <CardDescription className="text-orange-600/80">
-                      Select any ingredients you need to avoid for safety.
+                    <CardDescription className="text-red-600/80">
+                      Select any allergies or dietary restrictions to avoid.
                     </CardDescription>
                   </div>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                         {commonAllergies.map((allergy) => (
                           <Button
                             key={allergy.id}
@@ -482,7 +546,7 @@ export default function Home() {
                             }
                             size="sm"
                             onClick={() => toggleAllergy(allergy.id)}
-                            className="text-xs sm:text-sm"
+                            className="justify-start text-xs sm:text-sm"
                           >
                             {allergy.label}
                           </Button>
@@ -500,13 +564,13 @@ export default function Home() {
                               {watchedValues.customAllergies.map((allergy) => (
                                 <div
                                   key={allergy}
-                                  className="flex items-center space-x-1 bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs"
+                                  className="flex items-center space-x-1 bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs"
                                 >
                                   <span>{allergy}</span>
                                   <button
                                     type="button"
                                     onClick={() => removeCustomAllergy(allergy)}
-                                    className="text-orange-600 hover:text-orange-800 ml-1"
+                                    className="text-red-600 hover:text-red-800 ml-1"
                                   >
                                     ×
                                   </button>
@@ -523,16 +587,20 @@ export default function Home() {
                           value={newAllergy}
                           onChange={(e) => setNewAllergy(e.target.value)}
                           placeholder="Add custom allergy..."
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent h-9"
-                          onKeyPress={(e) =>
-                            e.key === "Enter" && addCustomAllergy()
-                          }
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addCustomAllergy();
+                            }
+                          }}
                         />
                         <Button
                           type="button"
                           onClick={addCustomAllergy}
                           size="sm"
-                          className="bg-orange-600 hover:bg-orange-700 text-white h-9 px-4"
+                          variant="outline"
+                          className="text-xs sm:text-sm"
                         >
                           Add
                         </Button>
@@ -541,53 +609,119 @@ export default function Home() {
                   </CardContent>
                 </Card>
 
-                {/* AI Payload Preview */}
+                {/* Meal Preferences */}
                 <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
                   <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg border-b border-blue-100/50 p-6">
                     <CardTitle className="flex items-center space-x-2 text-blue-800">
-                      <Eye className="w-5 h-5 text-blue-600" />
-                      <span>AI Request Preview</span>
+                      <Clock className="w-5 h-5 text-blue-600" />
+                      <span>Meal Preferences</span>
                     </CardTitle>
                     <CardDescription className="text-blue-600/80">
-                      See what data will be sent to the AI for meal generation.
+                      Customize your meal preferences for better results.
                     </CardDescription>
                   </div>
                   <CardContent>
-                    <div className="space-y-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowAIPayload(!showAIPayload)}
-                        className="w-full"
-                      >
-                        {showAIPayload ? (
-                          <>
-                            <EyeOff className="w-4 h-4 mr-2" />
-                            Hide AI Payload
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Show AI Payload
-                          </>
-                        )}
-                      </Button>
-
-                      {showAIPayload && (
-                        <div className="bg-gray-50 p-4 rounded-lg border">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">
-                            Data to be sent to AI:
-                          </h4>
-                          <pre className="text-xs text-gray-600 whitespace-pre-wrap overflow-auto max-h-64">
-                            {JSON.stringify(
-                              createAIPayload(watchedValues),
-                              null,
-                              2
-                            )}
-                          </pre>
+                    <div className="space-y-6">
+                      {/* Meal Types */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          Meal Type
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                          {mealTypes.map((mealType) => (
+                            <Button
+                              key={mealType.id}
+                              type="button"
+                              variant={
+                                watchedValues.mealType?.includes(mealType.id)
+                                  ? "default"
+                                  : "outline"
+                              }
+                              size="sm"
+                              onClick={() => toggleMealType(mealType.id)}
+                              className="justify-start text-xs"
+                            >
+                              {mealType.icon}
+                              <span className="ml-1">{mealType.label}</span>
+                            </Button>
+                          ))}
                         </div>
-                      )}
+                      </div>
+
+                      {/* Cooking Time */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          Maximum Cooking Time
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {cookingTimes.map((time) => (
+                            <Button
+                              key={time.id}
+                              type="button"
+                              variant={
+                                watchedValues.maxCookingTime === time.value
+                                  ? "default"
+                                  : "outline"
+                              }
+                              size="sm"
+                              onClick={() => setCookingTime(time.value)}
+                              className="text-xs"
+                            >
+                              {time.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Serving Size */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          Serving Size
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                          {servingSizes.map((size) => (
+                            <Button
+                              key={size.id}
+                              type="button"
+                              variant={
+                                watchedValues.servingSize === size.value
+                                  ? "default"
+                                  : "outline"
+                              }
+                              size="sm"
+                              onClick={() => setServingSize(size.value)}
+                              className="text-xs"
+                            >
+                              {size.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Difficulty Level */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          Difficulty Level
+                        </h4>
+                        <div className="grid grid-cols-3 gap-2">
+                          {difficultyLevels.map((level) => (
+                            <Button
+                              key={level.id}
+                              type="button"
+                              variant={
+                                watchedValues.difficultyLevel === level.value
+                                  ? "default"
+                                  : "outline"
+                              }
+                              size="sm"
+                              onClick={() => setDifficultyLevel(level.value)}
+                              className="text-xs"
+                            >
+                              {level.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -620,49 +754,6 @@ export default function Home() {
 
               {/* Results Section */}
               <div className="space-y-4 sm:space-y-6">
-                {/* Token Info */}
-                <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
-                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg border-b border-blue-100/50 p-6">
-                    <CardTitle className="text-lg text-blue-800">
-                      Your Balance
-                    </CardTitle>
-                  </div>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          Free Generations
-                        </span>
-                        <Badge variant="secondary">{freeGenerationsLeft}</Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          Paid Tokens
-                        </span>
-                        <Badge variant="outline">{tokensBalance}</Badge>
-                      </div>
-                      <Separator />
-                      <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-2">
-                          100 tokens = $1
-                        </p>
-                        <Button
-                          type="button"
-                          onClick={purchaseTokens}
-                          size="sm"
-                          className="w-full text-xs sm:text-sm"
-                        >
-                          <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                          <span className="hidden sm:inline">
-                            Buy More Tokens
-                          </span>
-                          <span className="sm:hidden">Buy Tokens</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 {/* Generated Meal */}
                 {generatedMeal && (
                   <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
@@ -741,13 +832,17 @@ export default function Home() {
                                 key={index}
                                 className="flex items-center space-x-2"
                               >
-                                <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
-                                <span>{ingredient}</span>
+                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></div>
+                                <span className="text-gray-700">
+                                  {ingredient}
+                                </span>
                               </li>
                             )
                           )}
                         </ul>
                       </div>
+
+                      <Separator />
 
                       {/* Instructions */}
                       <div>
@@ -757,11 +852,16 @@ export default function Home() {
                         <ol className="space-y-2 text-xs sm:text-sm">
                           {generatedMeal.instructions.map(
                             (instruction, index) => (
-                              <li key={index} className="flex space-x-2">
-                                <span className="font-semibold text-green-600 min-w-[16px] sm:min-w-[20px] flex-shrink-0">
-                                  {index + 1}.
+                              <li
+                                key={index}
+                                className="flex items-start space-x-2"
+                              >
+                                <div className="w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
+                                  {index + 1}
+                                </div>
+                                <span className="text-gray-700">
+                                  {instruction}
                                 </span>
-                                <span>{instruction}</span>
                               </li>
                             )
                           )}
