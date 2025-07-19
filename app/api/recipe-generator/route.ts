@@ -1,25 +1,39 @@
 /**
  * Recipe Generator API Route
  *
- * Uses Vercel AI SDK v5 (beta) for AI-powered recipe generation
- * TODO: Integrates with Vercel AI Gateway for centralized model management
+ * Uses Vercel AI SDK v5 (beta) for streaming AI-powered recipe generation
  */
 
-import { openai } from "@ai-sdk/openai";
-import { convertToModelMessages, generateObject, UIMessage } from "ai";
+import { streamObject } from "ai";
 import { recipeGenerationResponseSchema } from "@/lib/types/recipe";
 
 export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json();
+  try {
+    const { messages }: { messages: Array<{ role: string; content: string }> } =
+      await req.json();
 
-  const result = await generateObject({
-    model: openai("gpt-3.5-turbo"),
-    messages: convertToModelMessages(messages),
-    schema: recipeGenerationResponseSchema,
-    schemaName: "RecipeGenerationResponse",
-    schemaDescription:
-      "A complete recipe with ingredients, instructions, nutrition, and metadata for healthy meal generation",
-    prompt: `You are a professional chef and nutritionist specializing in healthy, high-protein meal planning. Generate a delicious, nutritious recipe based on the user's available ingredients and preferences.
+    if (!messages || !Array.isArray(messages)) {
+      return Response.json(
+        { error: "Invalid request: messages array is required" },
+        { status: 400 }
+      );
+    }
+
+    // Extract the user's content from the messages
+    const userContent =
+      messages.find((msg) => msg.role === "user")?.content || "";
+
+    // Stream the AI response with structured output
+    const result = await streamObject({
+      model: "openai/gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: `Generate a recipe with the following requirements:
+
+${userContent}
+
+You are a professional chef and nutritionist specializing in healthy, high-protein meal planning. Generate a delicious, nutritious recipe based on the user's available ingredients and preferences.
 
 CRITICAL REQUIREMENTS:
 - PRIORITIZE HIGH-PROTEIN OPTIONS: Focus on meals with 25-40g of protein per serving
@@ -29,17 +43,6 @@ CRITICAL REQUIREMENTS:
 - REALISTIC TIMING: Ensure prep and cook times are accurate and reasonable
 - NUTRITIONAL ACCURACY: Provide realistic, accurate nutritional information
 - CLEAR INSTRUCTIONS: Write step-by-step instructions that are easy to follow
-
-FORM DATA CONTEXT:
-The user will provide:
-- Available ingredients (text list)
-- Dietary preferences (high-protein, low-carb, vegan, vegetarian, keto, paleo)
-- Allergies and restrictions (gluten, dairy, nuts, etc.)
-- Meal type preferences (breakfast, lunch, dinner, snack, dessert)
-- Maximum cooking time limit
-- Serving size requirements
-- Difficulty level preference
-- Whether they can purchase additional ingredients
 
 RECIPE GUIDELINES:
 - Create balanced, flavorful meals that are both healthy and satisfying
@@ -58,7 +61,20 @@ OUTPUT REQUIREMENTS:
 - Focus on high-protein, nutritious options that support healthy eating goals
 
 Remember: This is for users who want to transform their pantry into healthy, delicious meals while respecting their dietary needs and preferences.`,
-  });
+        },
+      ],
+      schema: recipeGenerationResponseSchema,
+      schemaName: "RecipeGenerationResponse",
+      schemaDescription:
+        "A complete recipe with ingredients, instructions, nutrition, and metadata for healthy meal generation",
+    });
 
-  return Response.json(result.object);
+    return result.toTextStreamResponse();
+  } catch (error) {
+    console.error("Recipe generation error:", error);
+    return Response.json(
+      { error: "Failed to generate recipe" },
+      { status: 500 }
+    );
+  }
 }

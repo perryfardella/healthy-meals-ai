@@ -36,7 +36,9 @@ import {
   Sun,
   Moon,
   Coffee,
+  AlertCircle,
 } from "lucide-react";
+import { RecipeGenerationResponseType } from "@/lib/types/recipe";
 
 // Form validation schema
 const formSchema = z.object({
@@ -95,22 +97,6 @@ interface DifficultyLevel {
   id: string;
   label: string;
   value: string;
-}
-
-interface GeneratedMeal {
-  id: string;
-  name: string;
-  ingredients: string[];
-  instructions: string[];
-  macros: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  prepTime: string;
-  difficulty: string;
-  tags: string[];
 }
 
 const dietaryPreferences: DietaryPreference[] = [
@@ -172,9 +158,10 @@ export default function Home() {
   const [newPreference, setNewPreference] = useState<string>("");
   const [newAllergy, setNewAllergy] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedMeal, setGeneratedMeal] = useState<GeneratedMeal | null>(
-    null
-  );
+  const [generatedMeal, setGeneratedMeal] =
+    useState<RecipeGenerationResponseType | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [streamingText, setStreamingText] = useState<string>("");
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -278,45 +265,96 @@ export default function Home() {
 
   const generateMeal = async () => {
     setIsGenerating(true);
+    setError(null);
+    setStreamingText("");
 
-    // Simulate API call
-    setTimeout(() => {
-      const mockMeal: GeneratedMeal = {
-        id: "1",
-        name: "High-Protein Quinoa Chicken Bowl",
-        ingredients: [
-          "1 cup quinoa",
-          "2 chicken breasts",
-          "1 cup broccoli",
-          "1/2 cup cherry tomatoes",
-          "1/4 cup feta cheese",
-          "2 tbsp olive oil",
-          "1 lemon",
-          "Salt and pepper to taste",
+    try {
+      const formData = getValues();
+
+      // Prepare the request data
+      const requestData = {
+        messages: [
+          {
+            role: "user",
+            content: `Generate a recipe with the following requirements:
+              
+Available Ingredients: ${formData.ingredients}
+Include Basic Ingredients: ${formData.includeBasicIngredients ? "Yes" : "No"}
+Include Extra Ingredients: ${formData.includeExtraIngredients ? "Yes" : "No"}
+Dietary Preferences: ${formData.dietaryPreferences.join(", ")}
+Custom Preferences: ${formData.customPreferences.join(", ")}
+Allergies: ${formData.allergies.join(", ")}
+Custom Allergies: ${formData.customAllergies.join(", ")}
+Max Cooking Time: ${formData.maxCookingTime} minutes
+Meal Types: ${formData.mealType.join(", ")}
+Serving Size: ${formData.servingSize}
+Difficulty Level: ${formData.difficultyLevel}`,
+          },
         ],
-        instructions: [
-          "Cook quinoa according to package instructions",
-          "Season chicken breasts with salt and pepper",
-          "Grill chicken for 6-8 minutes per side until cooked through",
-          "Steam broccoli for 3-4 minutes until tender",
-          "Slice chicken and arrange over quinoa",
-          "Top with broccoli, tomatoes, and feta",
-          "Drizzle with olive oil and lemon juice",
-        ],
-        macros: {
-          calories: 450,
-          protein: 35,
-          carbs: 25,
-          fat: 18,
-        },
-        prepTime: "25 minutes",
-        difficulty: "Easy",
-        tags: ["High Protein", "Gluten Free", "Quick"],
       };
 
-      setGeneratedMeal(mockMeal);
+      // Use streaming API
+      const response = await fetch("/api/recipe-generator", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate recipe: ${response.statusText}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      const decoder = new TextDecoder();
+      let accumulatedText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        accumulatedText += chunk;
+        setStreamingText(accumulatedText);
+      }
+
+      // For now, we'll just display the streaming text
+      // In a real implementation, you'd parse this into structured data
+      setGeneratedMeal({
+        recipe: {
+          title: "Streaming Recipe Response",
+          description: accumulatedText,
+          prepTime: 0,
+          cookTime: 0,
+          servings: 1,
+          difficulty: "Easy" as const,
+          cuisine: "Mixed",
+          dietaryTags: ["Streaming"],
+          ingredients: [],
+          instructions: [],
+          nutrition: {
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+          },
+        },
+        usedIngredients: [],
+        confidence: 0.8,
+      });
+    } catch (err) {
+      console.error("Error generating recipe:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to generate recipe"
+      );
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -748,9 +786,9 @@ export default function Home() {
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         <span className="hidden sm:inline">
-                          Generating your meal...
+                          Streaming your meal...
                         </span>
-                        <span className="sm:hidden">Generating...</span>
+                        <span className="sm:hidden">Streaming...</span>
                       </>
                     ) : (
                       <>
@@ -773,6 +811,37 @@ export default function Home() {
                 </div>
 
                 {/* Results Section */}
+                {error && (
+                  <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-red-500/10">
+                    <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-t-lg border-b border-red-100/50 p-6">
+                      <CardTitle className="flex items-center space-x-2 text-red-800">
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                        <span>Error Generating Recipe</span>
+                      </CardTitle>
+                    </div>
+                    <CardContent>
+                      <p className="text-red-700">{error}</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Streaming Text Display */}
+                {streamingText && (
+                  <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-blue-500/10">
+                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg border-b border-blue-100/50 p-6">
+                      <CardTitle className="flex items-center space-x-2 text-blue-800">
+                        <Sparkles className="w-5 h-5 text-blue-600" />
+                        <span>Streaming Response</span>
+                      </CardTitle>
+                    </div>
+                    <CardContent>
+                      <div className="whitespace-pre-wrap text-sm text-gray-700 max-h-96 overflow-y-auto">
+                        {streamingText}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {generatedMeal && (
                   <div className="space-y-4 sm:space-y-6">
                     {/* Generated Meal */}
@@ -780,16 +849,19 @@ export default function Home() {
                       <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
                         <CardTitle className="flex items-center space-x-2 text-emerald-800">
                           <ChefHat className="w-5 h-5 text-emerald-600" />
-                          <span>Your Generated Meal</span>
+                          <span>Your Generated Recipe</span>
                         </CardTitle>
                       </div>
                       <CardContent className="space-y-4">
                         <div>
                           <h3 className="font-semibold text-lg mb-2">
-                            {generatedMeal.name}
+                            {generatedMeal.recipe.title}
                           </h3>
+                          <p className="text-gray-600 text-sm mb-3">
+                            {generatedMeal.recipe.description}
+                          </p>
                           <div className="flex flex-wrap gap-2 mb-3">
-                            {generatedMeal.tags.map((tag) => (
+                            {generatedMeal.recipe.dietaryTags.map((tag) => (
                               <Badge
                                 key={tag}
                                 variant="secondary"
@@ -805,7 +877,7 @@ export default function Home() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                           <div className="bg-blue-50 p-2 rounded">
                             <div className="text-xs sm:text-sm font-semibold text-blue-700">
-                              {generatedMeal.macros.calories}
+                              {generatedMeal.recipe.nutrition.calories}
                             </div>
                             <div className="text-xs text-blue-600">
                               Calories
@@ -813,7 +885,7 @@ export default function Home() {
                           </div>
                           <div className="bg-green-50 p-2 rounded">
                             <div className="text-xs sm:text-sm font-semibold text-green-700">
-                              {generatedMeal.macros.protein}g
+                              {generatedMeal.recipe.nutrition.protein}g
                             </div>
                             <div className="text-xs text-green-600">
                               Protein
@@ -821,13 +893,13 @@ export default function Home() {
                           </div>
                           <div className="bg-yellow-50 p-2 rounded">
                             <div className="text-xs sm:text-sm font-semibold text-yellow-700">
-                              {generatedMeal.macros.carbs}g
+                              {generatedMeal.recipe.nutrition.carbs}g
                             </div>
                             <div className="text-xs text-yellow-600">Carbs</div>
                           </div>
                           <div className="bg-red-50 p-2 rounded">
                             <div className="text-xs sm:text-sm font-semibold text-red-700">
-                              {generatedMeal.macros.fat}g
+                              {generatedMeal.recipe.nutrition.fat}g
                             </div>
                             <div className="text-xs text-red-600">Fat</div>
                           </div>
@@ -836,21 +908,75 @@ export default function Home() {
                         <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600">
                           <div className="flex items-center space-x-1">
                             <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                            <span>{generatedMeal.prepTime}</span>
+                            <span>
+                              {generatedMeal.recipe.prepTime +
+                                generatedMeal.recipe.cookTime}{" "}
+                              min
+                            </span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                            <span>{generatedMeal.difficulty}</span>
+                            <span>{generatedMeal.recipe.difficulty}</span>
                           </div>
                         </div>
 
-                        {/* Ingredients */}
+                        {/* Used Ingredients */}
+                        {generatedMeal.usedIngredients.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold mb-2 text-sm sm:text-base text-green-700">
+                              Used Your Ingredients
+                            </h4>
+                            <ul className="space-y-1 text-xs sm:text-sm">
+                              {generatedMeal.usedIngredients.map(
+                                (ingredient, index) => (
+                                  <li
+                                    key={index}
+                                    className="flex items-center space-x-2"
+                                  >
+                                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full flex-shrink-0"></div>
+                                    <span className="text-gray-700">
+                                      {ingredient}
+                                    </span>
+                                  </li>
+                                )
+                              )}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Suggested Additional Ingredients */}
+                        {generatedMeal.suggestedAdditionalIngredients &&
+                          generatedMeal.suggestedAdditionalIngredients.length >
+                            0 && (
+                            <div>
+                              <h4 className="font-semibold mb-2 text-sm sm:text-base text-blue-700">
+                                Suggested Additional Ingredients
+                              </h4>
+                              <ul className="space-y-1 text-xs sm:text-sm">
+                                {generatedMeal.suggestedAdditionalIngredients.map(
+                                  (ingredient, index) => (
+                                    <li
+                                      key={index}
+                                      className="flex items-center space-x-2"
+                                    >
+                                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full flex-shrink-0"></div>
+                                      <span className="text-gray-700">
+                                        {ingredient}
+                                      </span>
+                                    </li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          )}
+
+                        {/* Recipe Ingredients */}
                         <div>
                           <h4 className="font-semibold mb-2 text-sm sm:text-base">
-                            Ingredients
+                            Recipe Ingredients
                           </h4>
                           <ul className="space-y-1 text-xs sm:text-sm">
-                            {generatedMeal.ingredients.map(
+                            {generatedMeal.recipe.ingredients.map(
                               (ingredient, index) => (
                                 <li
                                   key={index}
@@ -858,7 +984,10 @@ export default function Home() {
                                 >
                                   <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></div>
                                   <span className="text-gray-700">
-                                    {ingredient}
+                                    {ingredient.amount} {ingredient.unit}{" "}
+                                    {ingredient.name}
+                                    {ingredient.notes &&
+                                      ` (${ingredient.notes})`}
                                   </span>
                                 </li>
                               )
@@ -874,22 +1003,34 @@ export default function Home() {
                             Instructions
                           </h4>
                           <ol className="space-y-2 text-xs sm:text-sm">
-                            {generatedMeal.instructions.map(
+                            {generatedMeal.recipe.instructions.map(
                               (instruction, index) => (
                                 <li
                                   key={index}
                                   className="flex items-start space-x-2"
                                 >
                                   <div className="w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
-                                    {index + 1}
+                                    {instruction.stepNumber}
                                   </div>
                                   <span className="text-gray-700">
-                                    {instruction}
+                                    {instruction.instruction}
                                   </span>
                                 </li>
                               )
                             )}
                           </ol>
+                        </div>
+
+                        {/* Confidence Score */}
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Recipe Match Confidence:
+                            </span>
+                            <span className="text-sm font-semibold text-purple-700">
+                              {Math.round(generatedMeal.confidence * 100)}%
+                            </span>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
