@@ -401,8 +401,8 @@ export default function Home() {
                               />
                             </FormControl>
                             <Label className="text-sm font-medium text-gray-700 cursor-pointer flex-1">
-                              Include basic ingredients (salt, pepper, oil,
-                              etc.)
+                              Include basic ingredients found in most cupboards
+                              (salt, pepper, oil, etc.)
                             </Label>
                           </FormItem>
                         )}
@@ -425,8 +425,9 @@ export default function Home() {
                               />
                             </FormControl>
                             <Label className="text-sm font-medium text-gray-700 cursor-pointer flex-1">
-                              Include additional ingredients for creative
-                              suggestions
+                              I&apos;m able to go to the shops - the AI will add
+                              additional ingredients that are commonly found at
+                              most convenience and grocery stores
                             </Label>
                           </FormItem>
                         )}
