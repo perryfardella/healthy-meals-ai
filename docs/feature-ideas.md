@@ -11,3 +11,4 @@
 - Upload images of cupboard / fridge to generate recipes
 - Allow advanced preferences, for allergies, etc.
 - Advanced macro information
+- Advanced filters like make a budget meal, moderate meal, premium meal

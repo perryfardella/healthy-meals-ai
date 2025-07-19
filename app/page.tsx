@@ -308,7 +308,7 @@ Difficulty Level: ${formData.difficultyLevel}`,
 
       const data = await response.json();
       console.log("Recipe generated:", data);
-      setGeneratedMeal(data);
+      setGeneratedMeal(data.object);
     } catch (err) {
       console.error("Error generating recipe:", err);
       setError(

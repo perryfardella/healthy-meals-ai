@@ -27,28 +27,10 @@ export async function POST(req: Request) {
     const result = await generateObject({
       model: "openai/gpt-4o-mini",
       // TODO: Get a fallback working
-      // providerOptions: {
-      //   gateway: {
-      //     order: [
-      //       {
-      //         provider: "openai",
-      //         model: "gpt-4o-mini",
-      //       },
-      //       {
-      //         provider: "deepseek",
-      //         model: "deepseek-chat",
-      //       },
-      //     ],
-      //   },
-      // },
-      messages: [
-        {
-          role: "user",
-          content: `Generate a recipe with the following requirements:
+      system: `You are a professional chef and nutritionist specializing in healthy, high-protein meal planning. You must generate recipes that follow the exact schema structure provided. Each instruction must be a complete object with stepNumber, instruction, and optional timeMinutes. The nutrition object must contain calories, protein, carbs, and fat. The confidence must be a number between 0 and 1. UsedIngredients must be an array of strings.`,
+      prompt: `Generate a recipe with the following requirements:
 
 ${userContent}
-
-You are a professional chef and nutritionist specializing in healthy, high-protein meal planning. Generate a delicious, nutritious recipe based on the user's available ingredients and preferences.
 
 CRITICAL REQUIREMENTS:
 - PRIORITIZE HIGH-PROTEIN OPTIONS: Focus on meals with 25-40g of protein per serving
@@ -76,19 +58,37 @@ OUTPUT REQUIREMENTS:
 - Focus on high-protein, nutritious options that support healthy eating goals
 
 Remember: This is for users who want to transform their pantry into healthy, delicious meals while respecting their dietary needs and preferences.`,
-        },
-      ],
       schema: recipeGenerationResponseSchema,
-      schemaName: "RecipeGenerationResponse",
-      schemaDescription:
-        "A complete recipe with ingredients, instructions, nutrition, and metadata for healthy meal generation",
+      maxRetries: 3,
     });
 
-    return Response.json(result.object);
+    return Response.json(result);
   } catch (error) {
     console.error("Recipe generation error:", error);
+
+    // Log the actual generated data for debugging
+    if (error && typeof error === "object" && "value" in error) {
+      console.error(
+        "Generated value that failed validation:",
+        JSON.stringify(error.value, null, 2)
+      );
+    }
+
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (
+        error.message.includes("AI_TypeValidationError") ||
+        error.message.includes("ZodError")
+      ) {
+        return Response.json(
+          { error: "AI generated invalid recipe format. Please try again." },
+          { status: 500 }
+        );
+      }
+    }
+
     return Response.json(
-      { error: "Failed to generate recipe" },
+      { error: "Failed to generate recipe. Please try again." },
       { status: 500 }
     );
   }
