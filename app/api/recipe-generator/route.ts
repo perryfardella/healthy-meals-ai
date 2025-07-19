@@ -26,6 +26,21 @@ export async function POST(req: Request) {
     // Stream the AI response with structured output
     const result = await streamObject({
       model: "openai/gpt-4o-mini",
+      // TODO: Get a fallback working
+      // providerOptions: {
+      //   gateway: {
+      //     order: [
+      //       {
+      //         provider: "openai",
+      //         model: "gpt-4o-mini",
+      //       },
+      //       {
+      //         provider: "deepseek",
+      //         model: "deepseek-chat",
+      //       },
+      //     ],
+      //   },
+      // },
       messages: [
         {
           role: "user",
