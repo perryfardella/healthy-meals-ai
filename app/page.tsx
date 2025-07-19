@@ -59,8 +59,10 @@ const formSchema = z.object({
   customAllergies: z.array(z.string()),
   maxCookingTime: z.string(),
   mealType: z.array(z.string()),
-  servingSize: z.string(),
+  servings: z.string(),
   difficultyLevel: z.string(),
+  cuisine: z.string().optional(),
+  estimatedCost: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -155,6 +157,27 @@ const difficultyLevels: DifficultyLevel[] = [
   { id: "hard", label: "Hard", value: "hard" },
 ];
 
+const cuisineOptions: { id: string; label: string }[] = [
+  { id: "italian", label: "Italian" },
+  { id: "mexican", label: "Mexican" },
+  { id: "asian", label: "Asian" },
+  { id: "mediterranean", label: "Mediterranean" },
+  { id: "indian", label: "Indian" },
+  { id: "american", label: "American" },
+  { id: "french", label: "French" },
+  { id: "thai", label: "Thai" },
+  { id: "japanese", label: "Japanese" },
+  { id: "greek", label: "Greek" },
+  { id: "middle-eastern", label: "Middle Eastern" },
+  { id: "latin-american", label: "Latin American" },
+];
+
+const estimatedCostOptions: { id: string; label: string; value: string }[] = [
+  { id: "budget", label: "Budget", value: "Budget" },
+  { id: "moderate", label: "Moderate", value: "Moderate" },
+  { id: "premium", label: "Premium", value: "Premium" },
+];
+
 export default function Home() {
   const [newPreference, setNewPreference] = useState<string>("");
   const [newAllergy, setNewAllergy] = useState<string>("");
@@ -175,8 +198,10 @@ export default function Home() {
       customAllergies: [],
       maxCookingTime: "30",
       mealType: [],
-      servingSize: "4",
+      servings: "4",
       difficultyLevel: "medium",
+      cuisine: "",
+      estimatedCost: "",
     },
   });
 
@@ -255,12 +280,20 @@ export default function Home() {
     setValue("maxCookingTime", timeValue);
   };
 
-  const setServingSize = (sizeValue: string) => {
-    setValue("servingSize", sizeValue);
+  const setServings = (sizeValue: string) => {
+    setValue("servings", sizeValue);
   };
 
   const setDifficultyLevel = (levelValue: string) => {
     setValue("difficultyLevel", levelValue);
+  };
+
+  const setCuisine = (cuisineValue: string) => {
+    setValue("cuisine", cuisineValue);
+  };
+
+  const setEstimatedCost = (costValue: string) => {
+    setValue("estimatedCost", costValue);
   };
 
   const generateMeal = async () => {
@@ -287,8 +320,10 @@ Allergies: ${formData.allergies.join(", ")}
 Custom Allergies: ${formData.customAllergies.join(", ")}
 Max Cooking Time: ${formData.maxCookingTime} minutes
 Meal Types: ${formData.mealType.join(", ")}
-Serving Size: ${formData.servingSize}
-Difficulty Level: ${formData.difficultyLevel}`,
+Servings: ${formData.servings}
+Difficulty Level: ${formData.difficultyLevel}
+Cuisine: ${formData.cuisine || "Not specified"}
+Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
           },
         ],
       };
@@ -682,10 +717,10 @@ Difficulty Level: ${formData.difficultyLevel}`,
                         </div>
                       </div>
 
-                      {/* Serving Size */}
+                      {/* Servings */}
                       <div>
                         <h4 className="text-sm font-medium text-gray-700 mb-3">
-                          Serving Size
+                          Servings
                         </h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                           {servingSizes.map((size) => (
@@ -693,12 +728,12 @@ Difficulty Level: ${formData.difficultyLevel}`,
                               key={size.id}
                               type="button"
                               variant={
-                                watchedValues.servingSize === size.value
+                                watchedValues.servings === size.value
                                   ? "default"
                                   : "outline"
                               }
                               size="sm"
-                              onClick={() => setServingSize(size.value)}
+                              onClick={() => setServings(size.value)}
                               className="text-xs"
                             >
                               {size.label}
@@ -727,6 +762,56 @@ Difficulty Level: ${formData.difficultyLevel}`,
                               className="text-xs"
                             >
                               {level.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Cuisine Preference */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          Preferred Cuisine
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {cuisineOptions.map((cuisine) => (
+                            <Button
+                              key={cuisine.id}
+                              type="button"
+                              variant={
+                                watchedValues.cuisine === cuisine.label
+                                  ? "default"
+                                  : "outline"
+                              }
+                              size="sm"
+                              onClick={() => setCuisine(cuisine.label)}
+                              className="text-xs"
+                            >
+                              {cuisine.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Estimated Cost */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          Budget Preference
+                        </h4>
+                        <div className="grid grid-cols-3 gap-2">
+                          {estimatedCostOptions.map((cost) => (
+                            <Button
+                              key={cost.id}
+                              type="button"
+                              variant={
+                                watchedValues.estimatedCost === cost.value
+                                  ? "default"
+                                  : "outline"
+                              }
+                              size="sm"
+                              onClick={() => setEstimatedCost(cost.value)}
+                              className="text-xs"
+                            >
+                              {cost.label}
                             </Button>
                           ))}
                         </div>
@@ -887,21 +972,64 @@ Difficulty Level: ${formData.difficultyLevel}`,
                             </div>
                           )}
 
-                          {/* Timing and Difficulty */}
-                          <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600">
-                            <div className="flex items-center space-x-1">
-                              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                              <span>
-                                {(generatedMeal?.recipe.prepTime || 0) +
-                                  (generatedMeal?.recipe.cookTime || 0)}{" "}
-                                min
-                              </span>
+                          {/* Recipe Details */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs sm:text-sm">
+                            {/* Timing Details */}
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-1 text-gray-600">
+                                <Clock className="w-3 h-3" />
+                                <span className="font-medium">Timing</span>
+                              </div>
+                              <div className="text-gray-700">
+                                <div>
+                                  Prep: {generatedMeal?.recipe.prepTime || 0}{" "}
+                                  min
+                                </div>
+                                <div>
+                                  Cook: {generatedMeal?.recipe.cookTime || 0}{" "}
+                                  min
+                                </div>
+                                <div className="font-medium">
+                                  Total:{" "}
+                                  {(generatedMeal?.recipe.prepTime || 0) +
+                                    (generatedMeal?.recipe.cookTime || 0)}{" "}
+                                  min
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center space-x-1">
-                              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                              <span>
-                                {generatedMeal?.recipe.difficulty || "Medium"}
-                              </span>
+
+                            {/* Servings and Difficulty */}
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-1 text-gray-600">
+                                <Users className="w-3 h-3" />
+                                <span className="font-medium">Details</span>
+                              </div>
+                              <div className="text-gray-700">
+                                <div>
+                                  {generatedMeal?.recipe.servings || 4} servings
+                                </div>
+                                <div>
+                                  {generatedMeal?.recipe.difficulty || "Medium"}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Cuisine and Cost */}
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-1 text-gray-600">
+                                <ChefHat className="w-3 h-3" />
+                                <span className="font-medium">Info</span>
+                              </div>
+                              <div className="text-gray-700">
+                                <div>
+                                  {generatedMeal?.recipe.cuisine ||
+                                    "Not specified"}
+                                </div>
+                                <div>
+                                  {generatedMeal?.recipe.estimatedCost ||
+                                    "Not specified"}
+                                </div>
+                              </div>
                             </div>
                           </div>
 
@@ -1026,6 +1154,22 @@ Difficulty Level: ${formData.difficultyLevel}`,
                               </div>
                             </>
                           )}
+
+                          {/* Tips */}
+                          {generatedMeal?.recipe.tips &&
+                            generatedMeal.recipe.tips.length > 0 && (
+                              <div>
+                                <Separator />
+                                <h4 className="font-semibold mb-2 text-sm sm:text-base text-emerald-700">
+                                  Tips & Suggestions
+                                </h4>
+                                <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm text-gray-700">
+                                  {generatedMeal.recipe.tips.map((tip, idx) => (
+                                    <li key={idx}>{tip}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
 
                           {/* Confidence Score */}
                           {generatedMeal?.confidence !== undefined && (
