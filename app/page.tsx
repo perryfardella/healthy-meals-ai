@@ -61,7 +61,7 @@ const formSchema = z.object({
   mealType: z.array(z.string()),
   servings: z.string(),
   difficultyLevel: z.string(),
-  cuisine: z.string().optional(),
+  cuisine: z.array(z.string()),
   estimatedCost: z.string().optional(),
 });
 
@@ -200,7 +200,7 @@ export default function Home() {
       mealType: [],
       servings: "4",
       difficultyLevel: "medium",
-      cuisine: "",
+      cuisine: [],
       estimatedCost: "",
     },
   });
@@ -288,8 +288,12 @@ export default function Home() {
     setValue("difficultyLevel", levelValue);
   };
 
-  const setCuisine = (cuisineValue: string) => {
-    setValue("cuisine", cuisineValue);
+  const toggleCuisine = (cuisineValue: string) => {
+    const currentCuisines = getValues("cuisine");
+    const newCuisines = currentCuisines.includes(cuisineValue)
+      ? currentCuisines.filter((id) => id !== cuisineValue)
+      : [...currentCuisines, cuisineValue];
+    setValue("cuisine", newCuisines);
   };
 
   const setEstimatedCost = (costValue: string) => {
@@ -322,7 +326,11 @@ Max Cooking Time: ${formData.maxCookingTime} minutes
 Meal Types: ${formData.mealType.join(", ")}
 Servings: ${formData.servings}
 Difficulty Level: ${formData.difficultyLevel}
-Cuisine: ${formData.cuisine || "Not specified"}
+Cuisine: ${
+              formData.cuisine.length > 0
+                ? formData.cuisine.join(", ")
+                : "Not specified"
+            }
 Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
           },
         ],
@@ -778,12 +786,12 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                               key={cuisine.id}
                               type="button"
                               variant={
-                                watchedValues.cuisine === cuisine.label
+                                watchedValues.cuisine?.includes(cuisine.label)
                                   ? "default"
                                   : "outline"
                               }
                               size="sm"
-                              onClick={() => setCuisine(cuisine.label)}
+                              onClick={() => toggleCuisine(cuisine.label)}
                               className="text-xs"
                             >
                               {cuisine.label}
@@ -1036,8 +1044,13 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                                   <span className="text-gray-500">
                                     Cuisine:
                                   </span>{" "}
-                                  {generatedMeal?.recipe.cuisine ||
-                                    "Not specified"}
+                                  {generatedMeal?.recipe.cuisine
+                                    ? Array.isArray(
+                                        generatedMeal.recipe.cuisine
+                                      )
+                                      ? generatedMeal.recipe.cuisine.join(", ")
+                                      : generatedMeal.recipe.cuisine
+                                    : "Not specified"}
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Cost:</span>{" "}
@@ -1149,17 +1162,21 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                           {/* Tips */}
                           {generatedMeal?.recipe.tips &&
                             generatedMeal.recipe.tips.length > 0 && (
-                              <div>
+                              <>
                                 <Separator />
-                                <h4 className="font-semibold mb-2 text-sm text-emerald-700">
-                                  Tips & Suggestions
-                                </h4>
-                                <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
-                                  {generatedMeal.recipe.tips.map((tip, idx) => (
-                                    <li key={idx}>{tip}</li>
-                                  ))}
-                                </ul>
-                              </div>
+                                <div>
+                                  <h4 className="font-semibold mb-2 text-sm text-emerald-700">
+                                    Tips & Suggestions
+                                  </h4>
+                                  <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                                    {generatedMeal.recipe.tips.map(
+                                      (tip, idx) => (
+                                        <li key={idx}>{tip}</li>
+                                      )
+                                    )}
+                                  </ul>
+                                </div>
+                              </>
                             )}
 
                           {/* Confidence Score */}

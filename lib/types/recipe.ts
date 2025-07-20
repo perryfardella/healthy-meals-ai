@@ -28,7 +28,7 @@ export interface Recipe {
   cookTime: number; // in minutes
   servings: number;
   difficulty: "Easy" | "Medium" | "Hard";
-  cuisine: string;
+  cuisine: string | string[];
   dietaryTags: string[]; // e.g., ['High-Protein', 'Low-Carb', 'Gluten-Free']
   ingredients: RecipeIngredient[];
   instructions: RecipeStep[];
@@ -43,7 +43,7 @@ export interface RecipeGenerationRequest {
   allergies?: string[];
   maxPrepTime?: number; // in minutes
   servings?: number;
-  cuisine?: string;
+  cuisine?: string | string[];
   includeAdditionalIngredients?: boolean; // whether to suggest ingredients not in pantry
 }
 
@@ -169,10 +169,21 @@ export const recipeSchema = z.object({
     })
     .describe("The difficulty level of the recipe"),
   cuisine: z
-    .string()
-    .min(2, "Cuisine must be at least 2 characters")
-    .max(50, "Cuisine name too long")
-    .describe("The type of cuisine (e.g., 'Italian', 'Mexican', 'Asian')"),
+    .union([
+      z
+        .string()
+        .min(2, "Cuisine must be at least 2 characters")
+        .max(50, "Cuisine name too long"),
+      z.array(
+        z
+          .string()
+          .min(2, "Cuisine must be at least 2 characters")
+          .max(50, "Cuisine name too long")
+      ),
+    ])
+    .describe(
+      "The type of cuisine(s) (e.g., 'Italian', 'Mexican', 'Asian' or ['Italian', 'Mexican'])"
+    ),
   dietaryTags: z
     .array(z.string().min(1))
     .min(1, "At least one dietary tag is required")

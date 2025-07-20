@@ -49,6 +49,7 @@ RECIPE GUIDELINES:
 - Provide clear portion sizes and serving information
 - Include estimated cost category (Budget/Moderate/Premium) based on ingredients used
 - Include any suggested additional ingredients in the tips section if they would significantly improve the recipe
+- For cuisine preferences: If multiple cuisines are specified, you can either choose one that best fits the ingredients, or create a fusion dish that combines elements from multiple cuisines
 
 OUTPUT REQUIREMENTS:
 - Complete recipe with all required fields
