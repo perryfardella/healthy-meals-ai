@@ -973,14 +973,16 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                           )}
 
                           {/* Recipe Details */}
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs sm:text-sm">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {/* Timing Details */}
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               <div className="flex items-center space-x-1 text-gray-600">
                                 <Clock className="w-3 h-3" />
-                                <span className="font-medium">Timing</span>
+                                <span className="text-sm font-medium">
+                                  Timing
+                                </span>
                               </div>
-                              <div className="text-gray-700">
+                              <div className="text-sm text-gray-700 space-y-1">
                                 <div>
                                   Prep: {generatedMeal?.recipe.prepTime || 0}{" "}
                                   min
@@ -999,33 +1001,44 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                             </div>
 
                             {/* Servings and Difficulty */}
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               <div className="flex items-center space-x-1 text-gray-600">
                                 <Users className="w-3 h-3" />
-                                <span className="font-medium">Details</span>
+                                <span className="text-sm font-medium">
+                                  Details
+                                </span>
                               </div>
-                              <div className="text-gray-700">
+                              <div className="text-sm text-gray-700 space-y-1">
                                 <div>
                                   {generatedMeal?.recipe.servings || 4} servings
                                 </div>
                                 <div>
+                                  <span className="text-gray-500">
+                                    Difficulty:
+                                  </span>{" "}
                                   {generatedMeal?.recipe.difficulty || "Medium"}
                                 </div>
                               </div>
                             </div>
 
                             {/* Cuisine and Cost */}
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               <div className="flex items-center space-x-1 text-gray-600">
                                 <ChefHat className="w-3 h-3" />
-                                <span className="font-medium">Info</span>
+                                <span className="text-sm font-medium">
+                                  Info
+                                </span>
                               </div>
-                              <div className="text-gray-700">
+                              <div className="text-sm text-gray-700 space-y-1">
                                 <div>
+                                  <span className="text-gray-500">
+                                    Cuisine:
+                                  </span>{" "}
                                   {generatedMeal?.recipe.cuisine ||
                                     "Not specified"}
                                 </div>
                                 <div>
+                                  <span className="text-gray-500">Cost:</span>{" "}
                                   {generatedMeal?.recipe.estimatedCost ||
                                     "Not specified"}
                                 </div>
@@ -1036,10 +1049,10 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                           {/* Used Ingredients */}
                           {generatedMeal?.usedIngredients && (
                             <div>
-                              <h4 className="font-semibold mb-2 text-sm sm:text-base text-green-700">
+                              <h4 className="font-semibold mb-2 text-sm text-green-700">
                                 Used Your Ingredients
                               </h4>
-                              <ul className="space-y-1 text-xs sm:text-sm">
+                              <ul className="space-y-1 text-sm">
                                 {generatedMeal.usedIngredients.map(
                                   (ingredient, index) => (
                                     <li
@@ -1060,10 +1073,10 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                           {/* Suggested Additional Ingredients */}
                           {generatedMeal?.suggestedAdditionalIngredients && (
                             <div>
-                              <h4 className="font-semibold mb-2 text-sm sm:text-base text-blue-700">
+                              <h4 className="font-semibold mb-2 text-sm text-blue-700">
                                 Suggested Additional Ingredients
                               </h4>
-                              <ul className="space-y-1 text-xs sm:text-sm">
+                              <ul className="space-y-1 text-sm">
                                 {generatedMeal.suggestedAdditionalIngredients.map(
                                   (ingredient, index) => (
                                     <li
@@ -1084,10 +1097,10 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                           {/* Recipe Ingredients */}
                           {generatedMeal?.recipe.ingredients && (
                             <div>
-                              <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                              <h4 className="font-semibold mb-2 text-sm">
                                 Recipe Ingredients
                               </h4>
-                              <ul className="space-y-1 text-xs sm:text-sm">
+                              <ul className="space-y-1 text-sm">
                                 {generatedMeal.recipe.ingredients.map(
                                   (
                                     ingredient: {
@@ -1124,10 +1137,10 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                             <>
                               <Separator />
                               <div>
-                                <h4 className="font-semibold mb-2 text-sm sm:text-base">
+                                <h4 className="font-semibold mb-2 text-sm">
                                   Instructions
                                 </h4>
-                                <ol className="space-y-2 text-xs sm:text-sm">
+                                <ol className="space-y-2 text-sm">
                                   {generatedMeal.recipe.instructions.map(
                                     (
                                       instruction: {
@@ -1160,10 +1173,10 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                             generatedMeal.recipe.tips.length > 0 && (
                               <div>
                                 <Separator />
-                                <h4 className="font-semibold mb-2 text-sm sm:text-base text-emerald-700">
+                                <h4 className="font-semibold mb-2 text-sm text-emerald-700">
                                   Tips & Suggestions
                                 </h4>
-                                <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm text-gray-700">
+                                <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
                                   {generatedMeal.recipe.tips.map((tip, idx) => (
                                     <li key={idx}>{tip}</li>
                                   ))}
