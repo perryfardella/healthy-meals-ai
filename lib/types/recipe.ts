@@ -50,7 +50,6 @@ export interface RecipeGenerationRequest {
 export interface RecipeGenerationResponse {
   recipe: Recipe;
   usedIngredients: string[];
-  suggestedAdditionalIngredients?: string[];
   confidence: number; // 0-1 scale
 }
 
@@ -211,12 +210,6 @@ export const recipeGenerationResponseSchema = z.object({
     .min(1, "At least one used ingredient is required")
     .describe(
       "List of ingredients from the user's available ingredients that were used"
-    ),
-  suggestedAdditionalIngredients: z
-    .array(z.string().min(1))
-    .optional()
-    .describe(
-      "Additional ingredients not in the user's pantry that would enhance the recipe"
     ),
   confidence: z
     .number()

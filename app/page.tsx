@@ -1072,30 +1072,6 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                             </div>
                           )}
 
-                          {/* Suggested Additional Ingredients */}
-                          {generatedMeal?.suggestedAdditionalIngredients && (
-                            <div>
-                              <h4 className="font-semibold mb-2 text-sm text-blue-700">
-                                Suggested Additional Ingredients
-                              </h4>
-                              <ul className="space-y-1 text-sm">
-                                {generatedMeal.suggestedAdditionalIngredients.map(
-                                  (ingredient, index) => (
-                                    <li
-                                      key={index}
-                                      className="flex items-center space-x-2"
-                                    >
-                                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full flex-shrink-0"></div>
-                                      <span className="text-gray-700">
-                                        {ingredient}
-                                      </span>
-                                    </li>
-                                  )
-                                )}
-                              </ul>
-                            </div>
-                          )}
-
                           {/* Recipe Ingredients */}
                           {generatedMeal?.recipe.ingredients && (
                             <div>

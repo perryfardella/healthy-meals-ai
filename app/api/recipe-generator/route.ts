@@ -48,11 +48,12 @@ RECIPE GUIDELINES:
 - Use common cooking techniques and accessible ingredients
 - Provide clear portion sizes and serving information
 - Include estimated cost category (Budget/Moderate/Premium) based on ingredients used
+- Include any suggested additional ingredients in the tips section if they would significantly improve the recipe
 
 OUTPUT REQUIREMENTS:
 - Complete recipe with all required fields
 - List which user ingredients were used
-- Suggest additional ingredients if they would significantly improve the recipe
+- Include any additional ingredient suggestions in the tips section
 - Provide confidence score based on how well the recipe matches user requirements
 - Ensure all dietary restrictions are strictly followed
 - Focus on high-protein, nutritious options that support healthy eating goals
