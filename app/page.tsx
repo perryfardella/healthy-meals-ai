@@ -792,30 +792,32 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                         </div>
                       </div>
 
-                      {/* Estimated Cost */}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">
-                          Budget Preference
-                        </h4>
-                        <div className="grid grid-cols-3 gap-2">
-                          {estimatedCostOptions.map((cost) => (
-                            <Button
-                              key={cost.id}
-                              type="button"
-                              variant={
-                                watchedValues.estimatedCost === cost.value
-                                  ? "default"
-                                  : "outline"
-                              }
-                              size="sm"
-                              onClick={() => setEstimatedCost(cost.value)}
-                              className="text-xs"
-                            >
-                              {cost.label}
-                            </Button>
-                          ))}
+                      {/* Estimated Cost - Only show if user is willing to go to shops */}
+                      {watchedValues.includeExtraIngredients && (
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-3">
+                            Budget Preference
+                          </h4>
+                          <div className="grid grid-cols-3 gap-2">
+                            {estimatedCostOptions.map((cost) => (
+                              <Button
+                                key={cost.id}
+                                type="button"
+                                variant={
+                                  watchedValues.estimatedCost === cost.value
+                                    ? "default"
+                                    : "outline"
+                                }
+                                size="sm"
+                                onClick={() => setEstimatedCost(cost.value)}
+                                className="text-xs"
+                              >
+                                {cost.label}
+                              </Button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
