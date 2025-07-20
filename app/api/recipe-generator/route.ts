@@ -27,7 +27,45 @@ export async function POST(req: Request) {
     const result = await generateObject({
       model: "openai/gpt-4o-mini",
       // TODO: Get a fallback working
-      system: `You are a professional chef and nutritionist specializing in healthy, high-protein meal planning. You must generate recipes that follow the exact schema structure provided. Each instruction must be a complete object with stepNumber, instruction, and optional timeMinutes. The nutrition object must contain calories, protein, carbs, and fat. The confidence must be a number between 0 and 1. UsedIngredients must be an array of strings.`,
+      system: `You are a professional chef and nutritionist specializing in healthy, high-protein meal planning. You must generate recipes that follow the exact schema structure provided. Each instruction must be a complete object with stepNumber, instruction, and optional timeMinutes (can be 0 for steps that don't require time). The nutrition object must contain calories, protein, carbs, and fat. The confidence must be a number between 0 and 1.
+
+REQUIRED FIELDS:
+- recipe: Complete recipe object with all details
+- confidence: A number between 0 and 1 indicating how well the recipe matches user requirements (REQUIRED - do not omit this field)
+
+CRITICAL INGREDIENT ORIGIN CLASSIFICATION:
+For each ingredient in the recipe, you MUST specify the "origin" field as one of:
+- "user": Ingredients that the user specifically mentioned having available
+- "basic": Common cupboard staples like salt, pepper, oil, vinegar, flour, sugar, spices, etc. (only include if user checked "include basic ingredients")
+- "additional": Ingredients that need to be purchased from shops (only include if user checked "include extra ingredients")
+
+This helps users understand exactly what they need to buy versus what they already have.
+
+EXAMPLE INGREDIENT STRUCTURE:
+{
+  "name": "chicken breast",
+  "amount": "2",
+  "unit": "pieces",
+  "notes": "boneless, skinless",
+  "origin": "user"
+}
+
+EXAMPLE INSTRUCTION STRUCTURE:
+{
+  "stepNumber": 1,
+  "instruction": "Heat oil in a large skillet over medium heat.",
+  "timeMinutes": 2
+}
+
+Note: timeMinutes can be 0 for steps like "Remove from heat and serve" that don't require time.
+
+COMPLETE RESPONSE STRUCTURE:
+{
+  "recipe": {
+    // ... all recipe details
+  },
+  "confidence": 0.95  // REQUIRED: number between 0 and 1
+}`,
       prompt: `Generate a recipe with the following requirements:
 
 ${userContent}
@@ -53,13 +91,20 @@ RECIPE GUIDELINES:
 
 OUTPUT REQUIREMENTS:
 - Complete recipe with all required fields
-- List which user ingredients were used
 - Include any additional ingredient suggestions in the tips section
-- Provide confidence score based on how well the recipe matches user requirements
+- Provide confidence score (REQUIRED: number between 0 and 1) based on how well the recipe matches user requirements
 - Ensure all dietary restrictions are strictly followed
 - Focus on high-protein, nutritious options that support healthy eating goals
 
-Remember: This is for users who want to transform their pantry into healthy, delicious meals while respecting their dietary needs and preferences.`,
+INGREDIENT ORIGIN CLASSIFICATION:
+- Mark ingredients as "user" if they were specifically mentioned in the user's available ingredients
+- Mark ingredients as "basic" if they are common cupboard staples (salt, pepper, oil, etc.) and the user checked "include basic ingredients"
+- Mark ingredients as "additional" if they need to be purchased and the user checked "include extra ingredients"
+- Be precise about ingredient origins to help users understand what they need to buy
+
+Remember: This is for users who want to transform their pantry into healthy, delicious meals while respecting their dietary needs and preferences.
+
+FINAL CHECK: Ensure your response includes both the "recipe" object and a "confidence" number between 0 and 1.`,
       schema: recipeGenerationResponseSchema,
       maxRetries: 3,
     });

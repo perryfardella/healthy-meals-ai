@@ -3,6 +3,7 @@ export interface RecipeIngredient {
   amount: string;
   unit?: string;
   notes?: string;
+  origin: "user" | "basic" | "additional"; // user = from user's ingredients, basic = basic cupboard items, additional = extra ingredients from shops
 }
 
 export interface RecipeStep {
@@ -49,7 +50,6 @@ export interface RecipeGenerationRequest {
 
 export interface RecipeGenerationResponse {
   recipe: Recipe;
-  usedIngredients: string[];
   confidence: number; // 0-1 scale
 }
 
@@ -79,6 +79,11 @@ export const recipeIngredientSchema = z.object({
     .describe(
       "Optional notes about the ingredient (e.g., 'fresh', 'diced', 'room temperature')"
     ),
+  origin: z
+    .enum(["user", "basic", "additional"])
+    .describe(
+      "Indicates where the ingredient comes from: 'user' = from user's available ingredients, 'basic' = basic cupboard items like salt/pepper/oil, 'additional' = extra ingredients from shops"
+    ),
 });
 
 export const recipeStepSchema = z.object({
@@ -94,9 +99,11 @@ export const recipeStepSchema = z.object({
   timeMinutes: z
     .number()
     .int()
-    .positive()
+    .min(0, "Time must be non-negative")
     .optional()
-    .describe("Estimated time in minutes for this step"),
+    .describe(
+      "Estimated time in minutes for this step (0 is allowed for steps that don't require time)"
+    ),
 });
 
 export const nutritionalInfoSchema = z.object({
@@ -216,12 +223,6 @@ export const recipeSchema = z.object({
 
 export const recipeGenerationResponseSchema = z.object({
   recipe: recipeSchema.describe("The complete recipe with all details"),
-  usedIngredients: z
-    .array(z.string().min(1))
-    .min(1, "At least one used ingredient is required")
-    .describe(
-      "List of ingredients from the user's available ingredients that were used"
-    ),
   confidence: z
     .number()
     .min(0, "Confidence must be at least 0")

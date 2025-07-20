@@ -1061,36 +1061,26 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                             </div>
                           </div>
 
-                          {/* Used Ingredients */}
-                          {generatedMeal?.usedIngredients && (
-                            <div>
-                              <h4 className="font-semibold mb-2 text-sm text-green-700">
-                                Used Your Ingredients
-                              </h4>
-                              <ul className="space-y-1 text-sm">
-                                {generatedMeal.usedIngredients.map(
-                                  (ingredient, index) => (
-                                    <li
-                                      key={index}
-                                      className="flex items-center space-x-2"
-                                    >
-                                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full flex-shrink-0"></div>
-                                      <span className="text-gray-700">
-                                        {ingredient}
-                                      </span>
-                                    </li>
-                                  )
-                                )}
-                              </ul>
-                            </div>
-                          )}
-
-                          {/* Recipe Ingredients */}
+                          {/* Ingredients List */}
                           {generatedMeal?.recipe.ingredients && (
                             <div>
                               <h4 className="font-semibold mb-2 text-sm">
-                                Recipe Ingredients
+                                Ingredients
                               </h4>
+                              <div className="mb-3 text-xs text-gray-600 space-y-1">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                  <span>From your kitchen</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                  <span>Basic cupboard items</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                  <span>Additional ingredients from shops</span>
+                                </div>
+                              </div>
                               <ul className="space-y-1 text-sm">
                                 {generatedMeal.recipe.ingredients.map(
                                   (
@@ -1099,25 +1089,45 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                                       amount: string;
                                       unit?: string;
                                       notes?: string;
+                                      origin: "user" | "basic" | "additional";
                                     },
                                     index: number
-                                  ) => (
-                                    <li
-                                      key={index}
-                                      className="flex items-center space-x-2"
-                                    >
-                                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></div>
-                                      <span className="text-gray-700">
-                                        {ingredient.amount}{" "}
-                                        {ingredient.unit
-                                          ? `${ingredient.unit} `
-                                          : ""}
-                                        {ingredient.name}
-                                        {ingredient.notes &&
-                                          ` (${ingredient.notes})`}
-                                      </span>
-                                    </li>
-                                  )
+                                  ) => {
+                                    const getDotColor = (origin: string) => {
+                                      switch (origin) {
+                                        case "user":
+                                          return "bg-green-400";
+                                        case "basic":
+                                          return "bg-gray-400";
+                                        case "additional":
+                                          return "bg-blue-400";
+                                        default:
+                                          return "bg-gray-400";
+                                      }
+                                    };
+
+                                    return (
+                                      <li
+                                        key={index}
+                                        className="flex items-center space-x-2"
+                                      >
+                                        <div
+                                          className={`w-1.5 h-1.5 ${getDotColor(
+                                            ingredient.origin
+                                          )} rounded-full flex-shrink-0`}
+                                        ></div>
+                                        <span className="text-gray-700">
+                                          {ingredient.amount}{" "}
+                                          {ingredient.unit
+                                            ? `${ingredient.unit} `
+                                            : ""}
+                                          {ingredient.name}
+                                          {ingredient.notes &&
+                                            ` (${ingredient.notes})`}
+                                        </span>
+                                      </li>
+                                    );
+                                  }
                                 )}
                               </ul>
                             </div>
