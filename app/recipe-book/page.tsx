@@ -9,6 +9,8 @@ import { RecipeGenerationResponseType } from "@/lib/types/recipe";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 function RecipeCard({
   recipe,
@@ -223,13 +225,59 @@ function RecipeCard({
   );
 }
 
+function AuthWarningBanner({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="max-w-7xl mx-auto bg-yellow-100 border-l-4 border-yellow-400 text-yellow-900 px-6 py-3 mb-6 flex items-center justify-between rounded shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 pr-4">
+        <span>
+          <strong>Warning:</strong> You are not signed in.{" "}
+        </span>
+        <span>
+          <Link
+            href="/auth/login"
+            className="underline text-yellow-900 hover:text-yellow-700 font-semibold mx-1"
+          >
+            Sign in
+          </Link>
+          or
+          <Link
+            href="/auth/sign-up"
+            className="underline text-yellow-900 hover:text-yellow-700 font-semibold mx-1"
+          >
+            Sign up
+          </Link>
+          to avoid losing your recipes!
+        </span>
+      </div>
+      <button
+        onClick={onClose}
+        className="ml-4 text-yellow-700 hover:text-yellow-900 font-bold text-2xl leading-none px-2 py-0.5 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        aria-label="Close warning"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 // Local type for recipes with id (for localStorage)
 type StoredRecipe = RecipeGenerationResponseType & { id: string };
 
 export default function RecipeBookPage() {
   const [recipes, setRecipes] = useState<StoredRecipe[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showBanner, setShowBanner] = useState(false);
   const router = useRouter();
+
+  // Check auth status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+      setShowBanner(!data.user);
+    };
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -253,6 +301,11 @@ export default function RecipeBookPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 relative overflow-hidden">
+      <div className="w-full px-4 sm:px-6 lg:px-8 pt-4">
+        {showBanner && (
+          <AuthWarningBanner onClose={() => setShowBanner(false)} />
+        )}
+      </div>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 relative z-10 flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
         <aside className="w-full md:w-72 bg-white/80 rounded-lg shadow-md p-4 mb-6 md:mb-0 md:mr-6 h-fit">
