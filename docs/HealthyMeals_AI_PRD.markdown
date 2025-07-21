@@ -94,6 +94,68 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
 | **Meals**       | `meal_id` (primary key), `user_id` (foreign key), `ingredients` (text or JSON), `recipe` (text), `macros` (JSON: calories, protein, carbs, fat), timestamp |
 | **Preferences** | `preference_id` (primary key), `user_id` (foreign key), `dietary_preferences` (JSON), `allergies` (JSON)                                                   |
 
+## Backend Recipe Storage & CRUD Implementation Plan
+
+### Overview
+
+To support persistent recipe storage, sharing, and management, we will implement a dedicated `recipes` table in Supabase (PostgreSQL) with full CRUD (Create, Read, Update, Delete) operations. This enables logged-in users to save, retrieve, and manage their recipes securely, while also providing a seamless migration path for unauthenticated users to save their local recipes upon sign-up or sign-in.
+
+### Key Requirements
+
+- Create a `recipes` table with a schema matching the app's recipe structure (see `lib/types/recipe.ts`).
+- Enable secure CRUD operations for authenticated users via Supabase RLS (Row Level Security).
+- Automatically save new recipes to the database for logged-in users.
+- Allow users to delete recipes from the Recipe Book page.
+- On sign-up/sign-in, migrate any locally saved recipes (from localStorage) to the user's database account.
+- When a user is signed in, always show recipes from the database (not localStorage).
+- Ensure unauthenticated users can still use localStorage for temporary recipe saving.
+
+### Implementation Steps
+
+1. **Database Migration**
+
+   - Create a migration SQL file in `supabase/migrations/` to define the `recipes` table, with all fields required by the app (see below for schema outline).
+   - Enable Row Level Security (RLS) on the table.
+   - Write granular RLS policies for `select`, `insert`, `update`, and `delete` for both `authenticated` and `anon` roles, ensuring only owners can access/modify their recipes.
+
+2. **Supabase Types & API Integration**
+
+   - Generate TypeScript types for the new table (if needed).
+   - Implement Supabase client functions for CRUD operations (create, read, delete; update to be added later).
+
+3. **Frontend Integration**
+
+   - Update the Recipe Book page to:
+     - Fetch and display recipes from the database for logged-in users.
+     - Fallback to localStorage for unauthenticated users.
+     - Allow deletion of recipes (with confirmation) for logged-in users.
+   - On recipe generation, automatically save to the database if the user is logged in.
+   - On sign-up/sign-in, migrate any localStorage recipes to the database and clear localStorage.
+
+4. **Testing & Validation**
+   - Test all CRUD operations for both authenticated and unauthenticated flows.
+   - Validate RLS policies to ensure data privacy and security.
+   - Ensure smooth migration of localStorage recipes on authentication.
+
+### Example `recipes` Table Schema (Postgres)
+
+- `id` (primary key, identity)
+- `user_id` (uuid, foreign key to users)
+- `title` (text)
+- `description` (text)
+- `prep_time` (integer)
+- `cook_time` (integer)
+- `servings` (integer)
+- `difficulty` (text)
+- `cuisine` (text[])
+- `dietary_tags` (text[])
+- `ingredients` (jsonb)
+- `instructions` (jsonb)
+- `nutrition` (jsonb)
+- `tips` (text[])
+- `estimated_cost` (text)
+- `created_at` (timestamp with time zone, default now())
+
 ## Technical Requirements
 
 - **Frontend**
