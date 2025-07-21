@@ -16,7 +16,11 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { getUserRecipes, deleteRecipe } from "@/lib/services/recipe";
+import {
+  getUserRecipes,
+  deleteRecipe,
+  createRecipe,
+} from "@/lib/services/recipe";
 
 function RecipeCard({
   recipe,
@@ -347,6 +351,25 @@ export default function RecipeBookPage() {
       if (data.user) {
         setShowBanner(false);
         setUserId(data.user.id);
+        // MIGRATION: If localStorage has recipes, migrate them to Supabase
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem("savedRecipes");
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                // Migrate each recipe
+                for (const r of parsed) {
+                  // r is RecipeGenerationResponseType & { id: string }
+                  if (r.recipe) {
+                    await createRecipe(r.recipe, data.user.id);
+                  }
+                }
+                localStorage.removeItem("savedRecipes");
+              }
+            } catch {}
+          }
+        }
         // Fetch from Supabase
         const { data: dbRecipes } = await getUserRecipes(data.user.id);
         if (dbRecipes) {
