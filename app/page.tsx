@@ -1188,20 +1188,6 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                                 </div>
                               </>
                             )}
-
-                          {/* Confidence Score */}
-                          {generatedMeal?.confidence !== undefined && (
-                            <div className="bg-gray-50 p-3 rounded-lg">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-700">
-                                  Recipe Match Confidence:
-                                </span>
-                                <span className="text-sm font-semibold text-purple-700">
-                                  {Math.round(generatedMeal.confidence * 100)}%
-                                </span>
-                              </div>
-                            </div>
-                          )}
                         </>
                       )}
                     </CardContent>
