@@ -36,6 +36,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { RecipeGenerationResponseType } from "@/lib/types/recipe";
 
 // Form validation schema
 const formSchema = z.object({
@@ -343,9 +344,19 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
           data.error || `Failed to generate recipe: ${response.statusText}`
         );
       }
-      // Save recipe to localStorage and navigate to /recipe-book
+      // Save recipe to savedRecipes array in localStorage and navigate to /recipe-book
       if (typeof window !== "undefined") {
-        localStorage.setItem("latestRecipe", JSON.stringify(data.object));
+        const recipeWithId = {
+          ...data.object,
+          id: window.crypto?.randomUUID?.() || Date.now().toString(),
+        };
+        let savedRecipes: RecipeGenerationResponseType[] = [];
+        try {
+          const existing = localStorage.getItem("savedRecipes");
+          if (existing) savedRecipes = JSON.parse(existing);
+        } catch {}
+        savedRecipes.push(recipeWithId);
+        localStorage.setItem("savedRecipes", JSON.stringify(savedRecipes));
       }
       router.push("/recipe-book");
     } catch (err) {

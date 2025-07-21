@@ -17,16 +17,15 @@ function RecipeCard({
 }) {
   if (!recipe) return null;
   return (
-    <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 max-w-2xl mx-auto mt-8">
+    <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 max-w-2xl mx-auto">
       <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
         <CardTitle className="flex items-center space-x-2 text-emerald-800">
           <ChefHat className="w-5 h-5 text-emerald-600" />
-          <span>Your Generated Recipe</span>
+          <span>{recipe.title}</span>
         </CardTitle>
       </div>
       <CardContent className="space-y-4">
         <div>
-          <h3 className="font-semibold text-lg mb-2">{recipe.title}</h3>
           <p className="text-gray-600 text-sm mb-3">{recipe.description}</p>
           {recipe.dietaryTags && (
             <div className="flex flex-wrap gap-2 mb-3">
@@ -224,45 +223,106 @@ function RecipeCard({
   );
 }
 
+// Local type for recipes with id (for localStorage)
+type StoredRecipe = RecipeGenerationResponseType & { id: string };
+
 export default function RecipeBookPage() {
-  const [recipe, setRecipe] = useState<
-    RecipeGenerationResponseType["recipe"] | null
-  >(null);
+  const [recipes, setRecipes] = useState<StoredRecipe[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("latestRecipe");
+      window.scrollTo(0, 0);
+      const stored = localStorage.getItem("savedRecipes");
       if (stored) {
         try {
-          const parsed = JSON.parse(stored);
-          setRecipe(parsed.recipe ? parsed.recipe : parsed); // support both {recipe: ...} and direct
+          const parsed: StoredRecipe[] = JSON.parse(stored);
+          setRecipes(parsed);
+          if (parsed.length > 0) {
+            setSelectedId(parsed[parsed.length - 1].id); // latest recipe
+          }
         } catch {
-          setRecipe(null);
+          setRecipes([]);
         }
       }
     }
   }, []);
 
+  const selectedRecipe = recipes.find((r) => r.id === selectedId);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 relative overflow-hidden">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 relative z-10">
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-800 via-pink-800 to-indigo-800 bg-clip-text text-transparent mb-6 text-center">
-          Recipe Book
-        </h2>
-        {recipe ? (
-          <RecipeCard recipe={recipe} />
-        ) : (
-          <div className="flex flex-col items-center text-center text-gray-600 mt-12 gap-6">
-            <div>No recipe to display. Please generate a recipe first.</div>
-            <Button
-              className="w-full sm:w-auto h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-              onClick={() => router.push("/")}
-            >
-              Generate a Recipe
-            </Button>
-          </div>
-        )}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 relative z-10 flex flex-col md:flex-row gap-8">
+        {/* Sidebar */}
+        <aside className="w-full md:w-72 bg-white/80 rounded-lg shadow-md p-4 mb-6 md:mb-0 md:mr-6 h-fit">
+          <h3 className="text-lg font-semibold mb-4 text-purple-800">
+            Your Recipes
+          </h3>
+          {recipes.length === 0 ? (
+            <div className="text-gray-500 text-sm">No recipes saved yet.</div>
+          ) : (
+            <ul className="space-y-2">
+              {recipes.map((r) => (
+                <li key={r.id}>
+                  <button
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-150 ${
+                      selectedId === r.id
+                        ? "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 text-white"
+                        : "bg-gray-100 hover:bg-purple-100 text-gray-800"
+                    }`}
+                    onClick={() => setSelectedId(r.id)}
+                  >
+                    <div className="font-medium leading-tight line-clamp-2">
+                      {r.recipe.title}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
+                      <span className="bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span role="img" aria-label="clock">
+                          ⏰
+                        </span>{" "}
+                        {(r.recipe.prepTime || 0) + (r.recipe.cookTime || 0)}{" "}
+                        min
+                      </span>
+                      {r.recipe.nutrition?.protein !== undefined && (
+                        <span className="bg-green-200 text-green-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <span role="img" aria-label="muscle">
+                            💪
+                          </span>{" "}
+                          {r.recipe.nutrition.protein}g
+                        </span>
+                      )}
+                      {r.recipe.nutrition?.calories !== undefined && (
+                        <span className="bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <span role="img" aria-label="fire">
+                            🔥
+                          </span>{" "}
+                          {r.recipe.nutrition.calories} kcal
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
+        {/* Main Recipe Display */}
+        <section className="flex-1">
+          {selectedRecipe ? (
+            <RecipeCard recipe={selectedRecipe.recipe} />
+          ) : (
+            <div className="flex flex-col items-center text-center text-gray-600 mt-12 gap-6">
+              <div>No recipe to display. Please generate a recipe first.</div>
+              <Button
+                className="w-full sm:w-auto h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                onClick={() => router.push("/")}
+              >
+                Generate a Recipe
+              </Button>
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
