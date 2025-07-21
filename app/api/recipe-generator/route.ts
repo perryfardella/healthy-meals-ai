@@ -26,7 +26,6 @@ export async function POST(req: Request) {
     // Generate the AI response with structured output
     const result = await generateObject({
       model: "openai/gpt-4o-mini",
-      // TODO: Get a fallback working
       system: `You are a professional chef and nutritionist specializing in healthy, high-protein meal planning. You must generate recipes that follow the exact schema structure provided. Each instruction must be a complete object with stepNumber, instruction, and optional timeMinutes (can be 0 for steps that don't require time). The nutrition object must contain calories, protein, carbs, and fat. The confidence must be a number between 0 and 1.
 
 REQUIRED FIELDS:
