@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { RecipeGenerationResponseType } from "@/lib/types/recipe";
+import { createClient } from "@/lib/supabase/client";
+import { createRecipe } from "@/lib/services/recipe";
 
 // Form validation schema
 const formSchema = z.object({
@@ -344,19 +346,27 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
           data.error || `Failed to generate recipe: ${response.statusText}`
         );
       }
-      // Save recipe to savedRecipes array in localStorage and navigate to /recipe-book
+      // Save recipe to Supabase if logged in, else localStorage
       if (typeof window !== "undefined") {
-        const recipeWithId = {
-          ...data.object,
-          id: window.crypto?.randomUUID?.() || Date.now().toString(),
-        };
-        let savedRecipes: RecipeGenerationResponseType[] = [];
-        try {
-          const existing = localStorage.getItem("savedRecipes");
-          if (existing) savedRecipes = JSON.parse(existing);
-        } catch {}
-        savedRecipes.push(recipeWithId);
-        localStorage.setItem("savedRecipes", JSON.stringify(savedRecipes));
+        const supabase = createClient();
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData.user) {
+          // Save to Supabase
+          await createRecipe(data.object.recipe, authData.user.id);
+        } else {
+          // Save to localStorage as before
+          const recipeWithId = {
+            ...data.object,
+            id: window.crypto?.randomUUID?.() || Date.now().toString(),
+          };
+          let savedRecipes: RecipeGenerationResponseType[] = [];
+          try {
+            const existing = localStorage.getItem("savedRecipes");
+            if (existing) savedRecipes = JSON.parse(existing);
+          } catch {}
+          savedRecipes.push(recipeWithId);
+          localStorage.setItem("savedRecipes", JSON.stringify(savedRecipes));
+        }
       }
       router.push("/recipe-book");
     } catch (err) {
