@@ -12,8 +12,6 @@ import {
   CardDescription,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -28,18 +26,16 @@ import {
   Heart,
   Zap,
   Clock,
-  Users,
   Sparkles,
   Leaf,
   Shield,
-  ChefHat,
   Sun,
   Moon,
   Coffee,
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import { RecipeGenerationResponseType } from "@/lib/types/recipe";
+import { useRouter } from "next/navigation";
 
 // Form validation schema
 const formSchema = z.object({
@@ -182,9 +178,9 @@ export default function Home() {
   const [newPreference, setNewPreference] = useState<string>("");
   const [newAllergy, setNewAllergy] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedMeal, setGeneratedMeal] =
-    useState<RecipeGenerationResponseType | null>(null);
+  // removed generatedMeal state, now handled via navigation
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -303,19 +299,17 @@ export default function Home() {
   const generateMeal = async () => {
     setIsGenerating(true);
     setError(null);
-    setGeneratedMeal(null);
+    // removed generatedMeal state, now handled via navigation
 
     try {
       const formData = getValues();
-
       // Prepare the request data
       const requestData = {
         messages: [
           {
             role: "user",
             content: `Generate a recipe with the following requirements:
-              
-Available Ingredients: ${formData.ingredients}
+              \nAvailable Ingredients: ${formData.ingredients}
 Include Basic Ingredients: ${formData.includeBasicIngredients ? "Yes" : "No"}
 Include Extra Ingredients: ${formData.includeExtraIngredients ? "Yes" : "No"}
 Dietary Preferences: ${formData.dietaryPreferences.join(", ")}
@@ -335,7 +329,6 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
           },
         ],
       };
-
       // Use API
       const response = await fetch("/api/recipe-generator", {
         method: "POST",
@@ -344,14 +337,17 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
         },
         body: JSON.stringify(requestData),
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to generate recipe: ${response.statusText}`);
-      }
-
       const data = await response.json();
-      console.log("Recipe generated:", data);
-      setGeneratedMeal(data.object);
+      if (!response.ok || data.error) {
+        throw new Error(
+          data.error || `Failed to generate recipe: ${response.statusText}`
+        );
+      }
+      // Save recipe to localStorage and navigate to /recipe-book
+      if (typeof window !== "undefined") {
+        localStorage.setItem("latestRecipe", JSON.stringify(data.object));
+      }
+      router.push("/recipe-book");
     } catch (err) {
       console.error("Error generating recipe:", err);
       setError(
@@ -878,318 +874,6 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                     </div>
                     <CardContent>
                       <p className="text-red-700">{error}</p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Recipe Card */}
-                {(isGenerating || generatedMeal) && (
-                  <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300">
-                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
-                      <CardTitle className="flex items-center space-x-2 text-emerald-800">
-                        <ChefHat className="w-5 h-5 text-emerald-600" />
-                        <span>
-                          {isGenerating
-                            ? "Creating Your Recipe..."
-                            : "Your Generated Recipe"}
-                        </span>
-                      </CardTitle>
-                    </div>
-                    <CardContent className="space-y-4">
-                      {isGenerating ? (
-                        // Loading state
-                        <div className="space-y-4">
-                          <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-                          <div className="space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
-                            <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                            {[1, 2, 3, 4].map((i) => (
-                              <div
-                                key={i}
-                                className="bg-gray-100 p-2 rounded animate-pulse"
-                              >
-                                <div className="h-4 bg-gray-200 rounded mb-1"></div>
-                                <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto"></div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        // Recipe content
-                        <>
-                          {/* Title and Description */}
-                          <div>
-                            <h3 className="font-semibold text-lg mb-2">
-                              {generatedMeal?.recipe.title}
-                            </h3>
-                            <p className="text-gray-600 text-sm mb-3">
-                              {generatedMeal?.recipe.description}
-                            </p>
-
-                            {/* Dietary Tags */}
-                            {generatedMeal?.recipe.dietaryTags && (
-                              <div className="flex flex-wrap gap-2 mb-3">
-                                {generatedMeal.recipe.dietaryTags.map(
-                                  (tag: string) => (
-                                    <Badge
-                                      key={tag}
-                                      variant="secondary"
-                                      className="text-xs"
-                                    >
-                                      {tag}
-                                    </Badge>
-                                  )
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Nutrition Info */}
-                          {generatedMeal?.recipe.nutrition && (
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                              <div className="bg-blue-50 p-2 rounded">
-                                <div className="text-xs sm:text-sm font-semibold text-blue-700">
-                                  {generatedMeal.recipe.nutrition.calories}
-                                </div>
-                                <div className="text-xs text-blue-600">
-                                  Calories
-                                </div>
-                              </div>
-                              <div className="bg-green-50 p-2 rounded">
-                                <div className="text-xs sm:text-sm font-semibold text-green-700">
-                                  {generatedMeal.recipe.nutrition.protein}g
-                                </div>
-                                <div className="text-xs text-green-600">
-                                  Protein
-                                </div>
-                              </div>
-                              <div className="bg-yellow-50 p-2 rounded">
-                                <div className="text-xs sm:text-sm font-semibold text-yellow-700">
-                                  {generatedMeal.recipe.nutrition.carbs}g
-                                </div>
-                                <div className="text-xs text-yellow-600">
-                                  Carbs
-                                </div>
-                              </div>
-                              <div className="bg-red-50 p-2 rounded">
-                                <div className="text-xs sm:text-sm font-semibold text-red-700">
-                                  {generatedMeal.recipe.nutrition.fat}g
-                                </div>
-                                <div className="text-xs text-red-600">Fat</div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Recipe Details */}
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {/* Timing Details */}
-                            <div className="space-y-2">
-                              <div className="flex items-center space-x-1 text-gray-600">
-                                <Clock className="w-3 h-3" />
-                                <span className="text-sm font-medium">
-                                  Timing
-                                </span>
-                              </div>
-                              <div className="text-sm text-gray-700 space-y-1">
-                                <div>
-                                  Prep: {generatedMeal?.recipe.prepTime || 0}{" "}
-                                  min
-                                </div>
-                                <div>
-                                  Cook: {generatedMeal?.recipe.cookTime || 0}{" "}
-                                  min
-                                </div>
-                                <div className="font-medium">
-                                  Total:{" "}
-                                  {(generatedMeal?.recipe.prepTime || 0) +
-                                    (generatedMeal?.recipe.cookTime || 0)}{" "}
-                                  min
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Servings and Difficulty */}
-                            <div className="space-y-2">
-                              <div className="flex items-center space-x-1 text-gray-600">
-                                <Users className="w-3 h-3" />
-                                <span className="text-sm font-medium">
-                                  Details
-                                </span>
-                              </div>
-                              <div className="text-sm text-gray-700 space-y-1">
-                                <div>
-                                  {generatedMeal?.recipe.servings || 4} servings
-                                </div>
-                                <div>
-                                  <span className="text-gray-500">
-                                    Difficulty:
-                                  </span>{" "}
-                                  {generatedMeal?.recipe.difficulty || "Medium"}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Cuisine and Cost */}
-                            <div className="space-y-2">
-                              <div className="flex items-center space-x-1 text-gray-600">
-                                <ChefHat className="w-3 h-3" />
-                                <span className="text-sm font-medium">
-                                  Info
-                                </span>
-                              </div>
-                              <div className="text-sm text-gray-700 space-y-1">
-                                <div>
-                                  <span className="text-gray-500">
-                                    Cuisine:
-                                  </span>{" "}
-                                  {generatedMeal?.recipe.cuisine
-                                    ? Array.isArray(
-                                        generatedMeal.recipe.cuisine
-                                      )
-                                      ? generatedMeal.recipe.cuisine.join(", ")
-                                      : generatedMeal.recipe.cuisine
-                                    : "Not specified"}
-                                </div>
-                                <div>
-                                  <span className="text-gray-500">Cost:</span>{" "}
-                                  {generatedMeal?.recipe.estimatedCost ||
-                                    "Not specified"}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Ingredients List */}
-                          {generatedMeal?.recipe.ingredients && (
-                            <div>
-                              <h4 className="font-semibold mb-2 text-sm">
-                                Ingredients
-                              </h4>
-                              <div className="mb-3 text-xs text-gray-600 space-y-1">
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                                  <span>From your kitchen</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                                  <span>Basic cupboard items</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                                  <span>Additional ingredients from shops</span>
-                                </div>
-                              </div>
-                              <ul className="space-y-1 text-sm">
-                                {generatedMeal.recipe.ingredients.map(
-                                  (
-                                    ingredient: {
-                                      name: string;
-                                      amount: string;
-                                      unit?: string;
-                                      notes?: string;
-                                      origin: "user" | "basic" | "additional";
-                                    },
-                                    index: number
-                                  ) => {
-                                    const getDotColor = (origin: string) => {
-                                      switch (origin) {
-                                        case "user":
-                                          return "bg-green-400";
-                                        case "basic":
-                                          return "bg-gray-400";
-                                        case "additional":
-                                          return "bg-blue-400";
-                                        default:
-                                          return "bg-gray-400";
-                                      }
-                                    };
-
-                                    return (
-                                      <li
-                                        key={index}
-                                        className="flex items-center space-x-2"
-                                      >
-                                        <div
-                                          className={`w-1.5 h-1.5 ${getDotColor(
-                                            ingredient.origin
-                                          )} rounded-full flex-shrink-0`}
-                                        ></div>
-                                        <span className="text-gray-700">
-                                          {ingredient.amount}{" "}
-                                          {ingredient.unit
-                                            ? `${ingredient.unit} `
-                                            : ""}
-                                          {ingredient.name}
-                                          {ingredient.notes &&
-                                            ` (${ingredient.notes})`}
-                                        </span>
-                                      </li>
-                                    );
-                                  }
-                                )}
-                              </ul>
-                            </div>
-                          )}
-
-                          {/* Instructions */}
-                          {generatedMeal?.recipe.instructions && (
-                            <>
-                              <Separator />
-                              <div>
-                                <h4 className="font-semibold mb-2 text-sm">
-                                  Instructions
-                                </h4>
-                                <ol className="space-y-2 text-sm">
-                                  {generatedMeal.recipe.instructions.map(
-                                    (
-                                      instruction: {
-                                        stepNumber: number;
-                                        instruction: string;
-                                        timeMinutes?: number;
-                                      },
-                                      index: number
-                                    ) => (
-                                      <li
-                                        key={index}
-                                        className="flex items-start space-x-2"
-                                      >
-                                        <div className="w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
-                                          {instruction.stepNumber}
-                                        </div>
-                                        <span className="text-gray-700">
-                                          {instruction.instruction}
-                                        </span>
-                                      </li>
-                                    )
-                                  )}
-                                </ol>
-                              </div>
-                            </>
-                          )}
-
-                          {/* Tips */}
-                          {generatedMeal?.recipe.tips &&
-                            generatedMeal.recipe.tips.length > 0 && (
-                              <>
-                                <Separator />
-                                <div>
-                                  <h4 className="font-semibold mb-2 text-sm text-emerald-700">
-                                    Tips & Suggestions
-                                  </h4>
-                                  <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
-                                    {generatedMeal.recipe.tips.map(
-                                      (tip, idx) => (
-                                        <li key={idx}>{tip}</li>
-                                      )
-                                    )}
-                                  </ul>
-                                </div>
-                              </>
-                            )}
-                        </>
-                      )}
                     </CardContent>
                   </Card>
                 )}
