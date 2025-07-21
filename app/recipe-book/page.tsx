@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ChefHat, Clock, Users, Loader2 } from "lucide-react";
+import { ChefHat, Clock, Users, Loader2, Trash } from "lucide-react";
 import {
   RecipeGenerationResponseType,
   RecipeIngredient,
@@ -297,6 +297,9 @@ export default function RecipeBookPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<
+    string | number | null
+  >(null);
 
   function isLocalRecipe(r: DBRecipe | LocalRecipe): r is LocalRecipe {
     return (r as LocalRecipe).recipe !== undefined;
@@ -405,27 +408,60 @@ export default function RecipeBookPage() {
 
   // Delete handler
   const handleDelete = async (id: string | number) => {
+    setConfirmDeleteId(id);
+  };
+  const confirmDelete = async () => {
+    if (confirmDeleteId == null) return;
     if (userId) {
-      // DB delete
       setLoading(true);
-      await deleteRecipe(Number(id), userId);
+      await deleteRecipe(Number(confirmDeleteId), userId);
       const { data: dbRecipes } = await getUserRecipes(userId);
       setRecipes(dbRecipes || []);
       setSelectedId(dbRecipes && dbRecipes.length > 0 ? dbRecipes[0].id : null);
       setLoading(false);
     } else {
-      // Local delete
-      const updated = recipes.filter((r) => r.id !== id);
+      const updated = recipes.filter((r) => r.id !== confirmDeleteId);
       setRecipes(updated);
       localStorage.setItem("savedRecipes", JSON.stringify(updated));
       setSelectedId(updated.length > 0 ? updated[updated.length - 1].id : null);
     }
+    setConfirmDeleteId(null);
   };
+  const cancelDelete = () => setConfirmDeleteId(null);
 
   const selectedRecipe = recipes.find((r) => r.id === selectedId);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 relative overflow-hidden">
+      {/* Confirmation Dialog */}
+      {confirmDeleteId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full flex flex-col items-center">
+            <Trash className="w-8 h-8 text-red-500 mb-2" />
+            <div className="text-lg font-semibold mb-2 text-gray-800 text-center">
+              Delete this recipe?
+            </div>
+            <div className="text-gray-600 mb-4 text-center">
+              This action cannot be undone. Are you sure you want to delete this
+              recipe?
+            </div>
+            <div className="flex gap-4 w-full">
+              <button
+                className="flex-1 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+              <button
+                className="flex-1 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300 transition-colors"
+                onClick={cancelDelete}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="w-full px-4 sm:px-6 lg:px-8 pt-4">
         {showBanner && (
           <AuthWarningBanner onClose={() => setShowBanner(false)} />
@@ -485,11 +521,11 @@ export default function RecipeBookPage() {
                     </div>
                   </button>
                   <button
-                    className="ml-2 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="ml-2 text-red-500 hover:text-red-700 bg-red-50 rounded-full p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
                     title="Delete recipe"
                     onClick={() => handleDelete(r.id)}
                   >
-                    &times;
+                    <Trash className="w-5 h-5" />
                   </button>
                 </li>
               ))}
