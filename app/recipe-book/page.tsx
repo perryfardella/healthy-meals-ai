@@ -5,12 +5,18 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ChefHat, Clock, Users } from "lucide-react";
-import { RecipeGenerationResponseType } from "@/lib/types/recipe";
+import {
+  RecipeGenerationResponseType,
+  RecipeIngredient,
+  RecipeStep,
+  NutritionalInfo,
+} from "@/lib/types/recipe";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { getUserRecipes, deleteRecipe } from "@/lib/services/recipe";
 
 function RecipeCard({
   recipe,
@@ -260,42 +266,138 @@ function AuthWarningBanner({ onClose }: { onClose: () => void }) {
   );
 }
 
-// Local type for recipes with id (for localStorage)
-type StoredRecipe = RecipeGenerationResponseType & { id: string };
-
 export default function RecipeBookPage() {
-  const [recipes, setRecipes] = useState<StoredRecipe[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  type DBRecipe = {
+    id: number;
+    user_id: string;
+    title: string;
+    description: string;
+    prep_time: number;
+    cook_time: number;
+    servings: number;
+    difficulty: string;
+    cuisine: string[];
+    dietary_tags: string[];
+    ingredients: RecipeIngredient[];
+    instructions: RecipeStep[];
+    nutrition: NutritionalInfo;
+    tips: string[] | null;
+    estimated_cost: string | null;
+    created_at: string;
+  };
+  type LocalRecipe =
+    import("@/lib/types/recipe").RecipeGenerationResponseType & { id: string };
+  const [recipes, setRecipes] = useState<(DBRecipe | LocalRecipe)[]>([]); // DB or local
+  const [selectedId, setSelectedId] = useState<string | number | null>(null);
   const [showBanner, setShowBanner] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Check auth status on mount
+  function isLocalRecipe(r: DBRecipe | LocalRecipe): r is LocalRecipe {
+    return (r as LocalRecipe).recipe !== undefined;
+  }
+  function getRecipeTitle(r: DBRecipe | LocalRecipe) {
+    return isLocalRecipe(r) ? r.recipe.title : r.title;
+  }
+  function getRecipeTotalTime(r: DBRecipe | LocalRecipe) {
+    return isLocalRecipe(r)
+      ? (r.recipe.prepTime || 0) + (r.recipe.cookTime || 0)
+      : (r.prep_time || 0) + (r.cook_time || 0);
+  }
+  function getRecipeProtein(r: DBRecipe | LocalRecipe) {
+    return isLocalRecipe(r)
+      ? r.recipe.nutrition?.protein
+      : r.nutrition?.protein;
+  }
+  function getRecipeCalories(r: DBRecipe | LocalRecipe) {
+    return isLocalRecipe(r)
+      ? r.recipe.nutrition?.calories
+      : r.nutrition?.calories;
+  }
+  function getRecipeForCard(r: DBRecipe | LocalRecipe) {
+    if (isLocalRecipe(r)) return r.recipe;
+    return {
+      title: r.title,
+      description: r.description,
+      prepTime: r.prep_time,
+      cookTime: r.cook_time,
+      servings: r.servings,
+      difficulty: r.difficulty as "Easy" | "Medium" | "Hard",
+      cuisine: r.cuisine,
+      dietaryTags: r.dietary_tags,
+      ingredients: r.ingredients,
+      instructions: r.instructions,
+      nutrition: r.nutrition,
+      tips: r.tips ?? undefined,
+      estimatedCost: r.estimated_cost as
+        | "Budget"
+        | "Moderate"
+        | "Premium"
+        | undefined,
+    };
+  }
+
+  // Check auth status and fetch recipes
   useEffect(() => {
-    const checkAuth = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       const supabase = createClient();
       const { data } = await supabase.auth.getUser();
-      setShowBanner(!data.user);
-    };
-    checkAuth();
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.scrollTo(0, 0);
-      const stored = localStorage.getItem("savedRecipes");
-      if (stored) {
-        try {
-          const parsed: StoredRecipe[] = JSON.parse(stored);
-          setRecipes(parsed);
-          if (parsed.length > 0) {
-            setSelectedId(parsed[parsed.length - 1].id); // latest recipe
-          }
-        } catch {
+      if (data.user) {
+        setShowBanner(false);
+        setUserId(data.user.id);
+        // Fetch from Supabase
+        const { data: dbRecipes } = await getUserRecipes(data.user.id);
+        if (dbRecipes) {
+          setRecipes(dbRecipes);
+          if (dbRecipes.length > 0) setSelectedId(dbRecipes[0].id);
+        } else {
           setRecipes([]);
         }
+      } else {
+        setShowBanner(true);
+        setUserId(null);
+        // Fallback to localStorage
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem("savedRecipes");
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored);
+              setRecipes(parsed);
+              if (parsed.length > 0)
+                setSelectedId(parsed[parsed.length - 1].id);
+            } catch {
+              setRecipes([]);
+            }
+          } else {
+            setRecipes([]);
+          }
+        }
       }
-    }
+      setLoading(false);
+    };
+    fetchData();
   }, []);
+
+  // Delete handler
+  const handleDelete = async (id: string | number) => {
+    if (userId) {
+      // DB delete
+      setLoading(true);
+      await deleteRecipe(Number(id), userId);
+      const { data: dbRecipes } = await getUserRecipes(userId);
+      setRecipes(dbRecipes || []);
+      setSelectedId(dbRecipes && dbRecipes.length > 0 ? dbRecipes[0].id : null);
+      setLoading(false);
+    } else {
+      // Local delete
+      const updated = recipes.filter((r) => r.id !== id);
+      setRecipes(updated);
+      localStorage.setItem("savedRecipes", JSON.stringify(updated));
+      setSelectedId(updated.length > 0 ? updated[updated.length - 1].id : null);
+    }
+  };
 
   const selectedRecipe = recipes.find((r) => r.id === selectedId);
 
@@ -312,12 +414,14 @@ export default function RecipeBookPage() {
           <h3 className="text-lg font-semibold mb-4 text-purple-800">
             Your Recipes
           </h3>
-          {recipes.length === 0 ? (
+          {loading ? (
+            <div className="text-gray-500 text-sm">Loading...</div>
+          ) : recipes.length === 0 ? (
             <div className="text-gray-500 text-sm">No recipes saved yet.</div>
           ) : (
             <ul className="space-y-2">
               {recipes.map((r) => (
-                <li key={r.id}>
+                <li key={r.id} className="flex items-center group">
                   <button
                     className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-150 ${
                       selectedId === r.id
@@ -327,33 +431,39 @@ export default function RecipeBookPage() {
                     onClick={() => setSelectedId(r.id)}
                   >
                     <div className="font-medium leading-tight line-clamp-2">
-                      {r.recipe.title}
+                      {getRecipeTitle(r)}
                     </div>
                     <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
                       <span className="bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full flex items-center gap-1">
                         <span role="img" aria-label="clock">
                           ⏰
                         </span>{" "}
-                        {(r.recipe.prepTime || 0) + (r.recipe.cookTime || 0)}{" "}
-                        min
+                        {getRecipeTotalTime(r)} min
                       </span>
-                      {r.recipe.nutrition?.protein !== undefined && (
+                      {getRecipeProtein(r) !== undefined && (
                         <span className="bg-green-200 text-green-800 px-2 py-0.5 rounded-full flex items-center gap-1">
                           <span role="img" aria-label="muscle">
                             💪
                           </span>{" "}
-                          {r.recipe.nutrition.protein}g
+                          {getRecipeProtein(r)}g
                         </span>
                       )}
-                      {r.recipe.nutrition?.calories !== undefined && (
+                      {getRecipeCalories(r) !== undefined && (
                         <span className="bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full flex items-center gap-1">
                           <span role="img" aria-label="fire">
                             🔥
                           </span>{" "}
-                          {r.recipe.nutrition.calories} kcal
+                          {getRecipeCalories(r)} kcal
                         </span>
                       )}
                     </div>
+                  </button>
+                  <button
+                    className="ml-2 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Delete recipe"
+                    onClick={() => handleDelete(r.id)}
+                  >
+                    &times;
                   </button>
                 </li>
               ))}
@@ -363,7 +473,7 @@ export default function RecipeBookPage() {
         {/* Main Recipe Display */}
         <section className="flex-1">
           {selectedRecipe ? (
-            <RecipeCard recipe={selectedRecipe.recipe} />
+            <RecipeCard recipe={getRecipeForCard(selectedRecipe)} />
           ) : (
             <div className="flex flex-col items-center text-center text-gray-600 mt-12 gap-6">
               <div>No recipe to display. Please generate a recipe first.</div>
