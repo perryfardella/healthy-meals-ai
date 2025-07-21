@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ChefHat, Clock, Users } from "lucide-react";
+import { ChefHat, Clock, Users, Loader2 } from "lucide-react";
 import {
   RecipeGenerationResponseType,
   RecipeIngredient,
@@ -438,7 +438,10 @@ export default function RecipeBookPage() {
             Your Recipes
           </h3>
           {loading ? (
-            <div className="text-gray-500 text-sm">Loading...</div>
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 text-purple-500 animate-spin mb-2" />
+              <span className="text-gray-500 text-sm">Loading recipes...</span>
+            </div>
           ) : recipes.length === 0 ? (
             <div className="text-gray-500 text-sm">No recipes saved yet.</div>
           ) : (
@@ -494,8 +497,15 @@ export default function RecipeBookPage() {
           )}
         </aside>
         {/* Main Recipe Display */}
-        <section className="flex-1">
-          {selectedRecipe ? (
+        <section className="flex-1 min-h-[300px] flex items-center justify-center">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center w-full h-full py-24">
+              <Loader2 className="w-10 h-10 text-purple-500 animate-spin mb-4" />
+              <span className="text-gray-500 text-lg">
+                Loading your recipes...
+              </span>
+            </div>
+          ) : selectedRecipe ? (
             <RecipeCard recipe={getRecipeForCard(selectedRecipe)} />
           ) : (
             <div className="flex flex-col items-center text-center text-gray-600 mt-12 gap-6">
