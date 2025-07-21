@@ -2,19 +2,36 @@
 
 import { Button } from "@/components/ui/button";
 import { ChefHat, Sparkles, ShoppingCart } from "lucide-react";
+import { LogoutButton } from "@/components/logout-button";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
 
-interface HeaderProps {
+export interface HeaderProps {
+  initialIsAuth: boolean;
   freeGenerationsLeft?: number;
   tokensBalance?: number;
   onPurchaseTokens?: () => void;
 }
 
 export function Header({
+  initialIsAuth,
   freeGenerationsLeft = 5,
   tokensBalance = 5,
   onPurchaseTokens = () =>
     alert("Redirecting to Lemon Squeezy for token purchase..."),
 }: HeaderProps) {
+  const [isAuth, setIsAuth] = useState(initialIsAuth);
+  useEffect(() => {
+    const supabase = createClient();
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setIsAuth(!!session?.user);
+      }
+    );
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -56,21 +73,27 @@ export function Header({
               Recipe Book
             </Button>
             <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => (window.location.href = "/auth/login")}
-                className="text-xs sm:text-sm"
-              >
-                Sign In
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => (window.location.href = "/auth/sign-up")}
-                className="bg-indigo-600 hover:bg-indigo-700 text-xs sm:text-sm"
-              >
-                Sign Up
-              </Button>
+              {isAuth ? (
+                <LogoutButton />
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => (window.location.href = "/auth/login")}
+                    className="text-xs sm:text-sm"
+                  >
+                    Sign In
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => (window.location.href = "/auth/sign-up")}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-xs sm:text-sm"
+                  >
+                    Sign Up
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
