@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Healthy Meals AI App is a web-based platform designed to empower users to create healthy, high-protein meals using ingredients they have on hand. By leveraging advanced AI technology through **Vercel AI SDK v5 (beta)** and Vercel's AI Gateway for centralized AI model management, the app provides personalized meal suggestions tailored to users' dietary preferences and restrictions, such as allergies. The app aims to simplify meal planning, promote nutritious eating, and enhance user wellness by offering detailed recipes and nutritional information. Integrated with LemonSqueezy for a token-based payment system, the app ensures accessibility with 5 free generations for new users and affordable token purchases.
+The Healthy Meals AI App is a web-based platform designed to empower users to create healthy, high-protein meals using ingredients they have on hand. By leveraging advanced AI technology through **Vercel AI SDK v5 (beta)** and Vercel's AI Gateway for centralized AI model management, the app provides personalized meal suggestions tailored to users' dietary preferences and restrictions, such as allergies. The app aims to simplify meal planning, promote nutritious eating, and enhance user wellness by offering detailed recipes and nutritional information. Integrated with LemonSqueezy for a token-based payment system, the app ensures accessibility with 10 free tokens for new users and affordable token purchases.
 
 ## Success Metrics
 
@@ -33,16 +33,17 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
 
 ## Current Implementation Status
 
-- **Planned Features**:
-  - Meal generation based on text input of ingredients.
-  - Integration with **Vercel AI SDK v5 (beta)** and Vercel's AI Gateway for centralized AI model management.
-  - User authentication and profile management.
-  - Lemon Squeezy payment processing for token purchases.
-  - Basic web interface for user interaction.
-  - Rate limiting non-logged in users using local storage. Logged in users get more, paid users get even more.
+- **Completed Features**:
+  - ✅ Meal generation based on text input of ingredients.
+  - ✅ Integration with **Vercel AI SDK v5 (beta)** and Vercel's AI Gateway for centralized AI model management.
+  - ✅ User authentication and profile management.
+  - ✅ Token-based system with 10 free tokens for new users.
+  - ✅ Basic web interface for user interaction.
+  - ✅ Recipe storage and management with CRUD operations.
+  - ✅ Allergy and dietary preference filtering.
 - **In Development**:
-  - Allergy and dietary preference filtering.
-  - Photo input for pantry items (advanced feature).
+  - 🔄 Lemon Squeezy payment processing for token purchases (placeholder implemented).
+  - 🔄 Photo input for pantry items (advanced feature).
 - **Future Features**:
   - Multi-day meal planning.
   - Community sharing and rating of meals.
@@ -70,10 +71,39 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
 - **Photo Input (Advanced)**
   - Users can upload a pantry photo for ingredient identification (costs additional tokens).
   - The app uses image recognition to identify ingredients and generate meal suggestions.
-- **Token System**
-  - Each meal generation costs 1 token.
-  - Users can purchase 100 tokens for $1 via LemonSqueezy.
-  - New users receive 5 free generations upon signup.
+
+## Token System
+
+The app uses a simplified token-based system designed for clarity and ease of use:
+
+### Token Allocation
+
+- **New Users**: Receive 10 free tokens upon signup
+- **Token Cost**: 1 token per recipe generation
+- **Photo Analysis**: 2 tokens per photo analysis (future feature)
+- **Purchase Rate**: 100 tokens for $1 via LemonSqueezy
+
+### System Design
+
+- **Single Currency**: Only tokens, no separate "free generations" tracking
+- **Automatic Creation**: Token records are automatically created when users sign up
+- **Simple Logic**: Users can generate recipes if they have sufficient tokens
+- **Clear Feedback**: UI shows remaining token count and purchase options when tokens are depleted
+
+### Benefits
+
+- **Simplified UX**: Users understand they have X tokens to spend
+- **Easier Purchasing**: Direct token purchases without confusion
+- **Better Scalability**: Easier to implement different token packages
+- **Clearer Analytics**: Single metric for usage tracking
+
+### Technical Implementation
+
+- **Database**: Dedicated `user_tokens` table with RLS policies
+- **API**: Token validation and consumption handled server-side
+- **UI**: Real-time token balance display in header and dedicated components
+- **Security**: Row-level security ensures users can only access their own token data
+
 - **User Profiles**
   - Users can create accounts to save preferences, allergies, and meal history.
   - Option to save favorite meals for quick access.
@@ -90,7 +120,8 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
 
 | Table           | Fields                                                                                                                                                     |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Users**       | `user_id` (primary key), `email`, `password_hash`, `tokens_balance`, `free_generations_left`                                                               |
+| **Users**       | `user_id` (primary key), `email`, `password_hash`                                                                                                          |
+| **User_Tokens** | `id` (primary key), `user_id` (foreign key), `tokens_balance`, `total_generations_used`, `created_at`, `updated_at`                                        |
 | **Meals**       | `meal_id` (primary key), `user_id` (foreign key), `ingredients` (text or JSON), `recipe` (text), `macros` (JSON: calories, protein, carbs, fat), timestamp |
 | **Preferences** | `preference_id` (primary key), `user_id` (foreign key), `dietary_preferences` (JSON), `allergies` (JSON)                                                   |
 
@@ -212,7 +243,7 @@ The use of **Vercel AI SDK v5 (beta)** with Vercel's AI Gateway provides several
 ## Q&A
 
 - **Q: Can I use the app without purchasing tokens?**
-  - **A**: Yes, new users receive 5 free generations to try the app.
+  - **A**: Yes, new users receive 10 free tokens to try the app. Each recipe generation costs 1 token.
 - **Q: How does the photo input work?**
   - **A**: Users upload a pantry photo, and the app uses AI to identify ingredients and suggest meals, costing additional tokens.
 - **Q: Is the app safe for users with allergies?**

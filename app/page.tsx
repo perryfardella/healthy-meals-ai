@@ -439,7 +439,7 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
           {!isLoggedIn && (
             <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 text-sm text-blue-700">
               <span>✨</span>
-              <span>Try one recipe free, then sign up for more recipes</span>
+              <span>Sign up to get 10 free tokens for recipe generation</span>
             </div>
           )}
         </div>

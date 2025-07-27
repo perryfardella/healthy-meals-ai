@@ -6,6 +6,11 @@
 
 import { generateObject } from "ai";
 import { recipeGenerationResponseSchema } from "@/lib/types/recipe";
+import { createClient } from "@/lib/supabase/server";
+import {
+  validateTokenForGenerationServer,
+  consumeTokensServer,
+} from "@/lib/services/token-server";
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +21,38 @@ export async function POST(req: Request) {
       return Response.json(
         { error: "Invalid request: messages array is required" },
         { status: 400 }
+      );
+    }
+
+    // Check authentication and token balance
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return Response.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    // Validate token balance for recipe generation
+    const tokenValidation = await validateTokenForGenerationServer(
+      user.id,
+      "recipe_generation"
+    );
+    if (!tokenValidation.can_generate) {
+      return Response.json(
+        {
+          error: "Insufficient tokens",
+          details: {
+            remaining_tokens: tokenValidation.remaining_tokens,
+            cost_per_generation: tokenValidation.cost_per_generation,
+          },
+        },
+        { status: 402 }
       );
     }
 
@@ -110,6 +147,15 @@ Each instruction must be a complete object with stepNumber, instruction, and opt
       schema: recipeGenerationResponseSchema,
       maxRetries: 3,
     });
+
+    // Use tokens for recipe generation
+    const tokenUsed = await consumeTokensServer(user.id, "recipe_generation");
+    if (!tokenUsed) {
+      return Response.json(
+        { error: "Failed to process token usage" },
+        { status: 500 }
+      );
+    }
 
     return Response.json(result);
   } catch (error) {

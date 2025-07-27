@@ -3,35 +3,22 @@
 import { Button } from "@/components/ui/button";
 import { ChefHat, Sparkles, ShoppingCart } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
-import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useUser } from "@/lib/hooks/useUser";
+import { useTokens } from "@/lib/hooks/useTokens";
 
 export interface HeaderProps {
-  initialIsAuth: boolean;
-  freeGenerationsLeft?: number;
-  tokensBalance?: number;
   onPurchaseTokens?: () => void;
 }
 
 export function Header({
-  initialIsAuth,
-  freeGenerationsLeft = 5,
-  tokensBalance = 5,
   onPurchaseTokens = () =>
     alert("Redirecting to Lemon Squeezy for token purchase..."),
 }: HeaderProps) {
-  const [isAuth, setIsAuth] = useState(initialIsAuth);
-  useEffect(() => {
-    const supabase = createClient();
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setIsAuth(!!session?.user);
-      }
-    );
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
-  }, []);
+  const { user, loading: userLoading } = useUser();
+  const { balance, loading: tokenLoading } = useTokens();
+
+  const isAuth = user !== null;
+  const isLoading = userLoading || tokenLoading;
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -47,14 +34,14 @@ export function Header({
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <div className="hidden sm:flex items-center space-x-2">
-              <Sparkles className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm text-gray-600">
-                {freeGenerationsLeft > 0
-                  ? `${freeGenerationsLeft} free`
-                  : `${tokensBalance} tokens`}
-              </span>
-            </div>
+            {isAuth && !isLoading && (
+              <div className="hidden sm:flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-yellow-500" />
+                <span className="text-sm text-gray-600">
+                  {balance?.tokens_balance || 0} tokens
+                </span>
+              </div>
+            )}
             <Button
               onClick={onPurchaseTokens}
               size="sm"
