@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -183,6 +184,8 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   // removed generatedMeal state, now handled via navigation
   const [error, setError] = useState<string | null>(null);
+  const [hasGeneratedRecipe, setHasGeneratedRecipe] = useState<boolean>(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const router = useRouter();
 
   const form = useForm<FormData>({
@@ -206,6 +209,28 @@ export default function Home() {
 
   const { watch, setValue, getValues } = form;
   const watchedValues = watch();
+
+  // Check authentication status and recipe generation limit on component mount
+  React.useEffect(() => {
+    const checkAuthAndLimit = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+
+      if (data.user) {
+        setIsLoggedIn(true);
+        setHasGeneratedRecipe(false); // Logged in users have no limit
+      } else {
+        setIsLoggedIn(false);
+        // Check if user has already generated a recipe (non-logged in users)
+        if (typeof window !== "undefined") {
+          const generatedCount = localStorage.getItem("recipeGenerationCount");
+          setHasGeneratedRecipe(generatedCount === "1");
+        }
+      }
+    };
+
+    checkAuthAndLimit();
+  }, []);
 
   const togglePreference = (preferenceId: string) => {
     const currentPreferences = getValues("dietaryPreferences");
@@ -300,6 +325,14 @@ export default function Home() {
   };
 
   const generateMeal = async () => {
+    // Check if non-logged in user has already generated a recipe
+    if (!isLoggedIn && hasGeneratedRecipe) {
+      setError(
+        "You&apos;ve already generated one recipe. Please sign up to generate more recipes!"
+      );
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
     // removed generatedMeal state, now handled via navigation
@@ -366,6 +399,10 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
           } catch {}
           savedRecipes.push(recipeWithId);
           localStorage.setItem("savedRecipes", JSON.stringify(savedRecipes));
+
+          // Track recipe generation count for non-logged in users
+          localStorage.setItem("recipeGenerationCount", "1");
+          setHasGeneratedRecipe(true);
         }
       }
       router.push("/recipe-book");
@@ -394,11 +431,17 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-800 via-pink-800 to-indigo-800 bg-clip-text text-transparent mb-3 sm:mb-4">
             Transform Your Pantry Into a Gourmet Kitchen
           </h2>
-          <p className="text-base sm:text-lg lg:text-xl text-gray-700 max-w-3xl mx-auto px-2 font-medium">
+          <p className="text-base sm:text-lg lg:text-xl text-gray-700 max-w-3xl mx-auto px-2 font-medium mb-4">
             Get personalized, high-protein meal plans tailored to your
             ingredients and dietary needs. Save time, eat healthy, and enjoy
             delicious meals every day.
           </p>
+          {!isLoggedIn && (
+            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 text-sm text-blue-700">
+              <span>✨</span>
+              <span>Try one recipe free, then sign up for more recipes</span>
+            </div>
+          )}
         </div>
 
         <Form {...form}>
@@ -847,12 +890,48 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                   </CardContent>
                 </Card>
 
+                {/* Recipe Generation Limit Warning */}
+                {!isLoggedIn && hasGeneratedRecipe && (
+                  <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-orange-500/10">
+                    <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-t-lg border-b border-orange-100/50 p-6">
+                      <CardTitle className="flex items-center space-x-2 text-orange-800">
+                        <AlertCircle className="w-5 h-5 text-orange-600" />
+                        <span>Recipe Generation Limit Reached</span>
+                      </CardTitle>
+                    </div>
+                    <CardContent>
+                      <p className="text-orange-700 mb-4">
+                        You&apos;ve already generated one recipe as a guest
+                        user. To generate more recipes and save them
+                        permanently, please sign up for a free account.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          onClick={() => router.push("/auth/sign-up")}
+                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                        >
+                          Sign Up for Free
+                        </Button>
+                        <Button
+                          onClick={() => router.push("/auth/login")}
+                          variant="outline"
+                          className="border-purple-600 text-purple-600 hover:bg-purple-50"
+                        >
+                          Sign In
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Generate Button */}
                 <div className="relative group">
                   <Button
                     type="submit"
                     disabled={
-                      isGenerating || !watchedValues.ingredients?.trim()
+                      isGenerating ||
+                      !watchedValues.ingredients?.trim() ||
+                      (!isLoggedIn && hasGeneratedRecipe)
                     }
                     className="w-full h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
                   >
@@ -863,6 +942,14 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                           Creating your recipe...
                         </span>
                         <span className="sm:hidden">Creating...</span>
+                      </>
+                    ) : !isLoggedIn && hasGeneratedRecipe ? (
+                      <>
+                        <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                        <span className="hidden sm:inline">
+                          Sign Up to Generate More
+                        </span>
+                        <span className="sm:hidden">Sign Up Required</span>
                       </>
                     ) : (
                       <>

@@ -235,33 +235,27 @@ function RecipeCard({
   );
 }
 
-function AuthWarningBanner({ onClose }: { onClose: () => void }) {
+function GenerationLimitBanner({ onClose }: { onClose: () => void }) {
   return (
-    <div className="max-w-7xl mx-auto bg-yellow-100 border-l-4 border-yellow-400 text-yellow-900 px-6 py-3 mb-6 flex items-center justify-between rounded shadow-sm">
+    <div className="max-w-7xl mx-auto bg-orange-100 border-l-4 border-orange-400 text-orange-900 px-6 py-3 mb-6 flex items-center justify-between rounded shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 pr-4">
         <span>
-          <strong>Warning:</strong> You are not signed in.{" "}
+          <strong>Recipe Limit Reached:</strong> You&apos;ve generated your free
+          recipe.{" "}
         </span>
         <span>
           <Link
-            href="/auth/login"
-            className="underline text-yellow-900 hover:text-yellow-700 font-semibold mx-1"
-          >
-            Sign in
-          </Link>
-          or
-          <Link
             href="/auth/sign-up"
-            className="underline text-yellow-900 hover:text-yellow-700 font-semibold mx-1"
+            className="underline text-orange-900 hover:text-orange-700 font-semibold mx-1"
           >
-            Sign up
+            Sign up for free
           </Link>
-          to avoid losing your recipes!
+          to generate more recipes and save them permanently!
         </span>
       </div>
       <button
         onClick={onClose}
-        className="ml-4 text-yellow-700 hover:text-yellow-900 font-bold text-2xl leading-none px-2 py-0.5 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        className="ml-4 text-orange-700 hover:text-orange-900 font-bold text-2xl leading-none px-2 py-0.5 rounded focus:outline-none focus:ring-2 focus:ring-orange-400"
         aria-label="Close warning"
       >
         ×
@@ -293,7 +287,7 @@ export default function RecipeBookPage() {
     import("@/lib/types/recipe").RecipeGenerationResponseType & { id: string };
   const [recipes, setRecipes] = useState<(DBRecipe | LocalRecipe)[]>([]); // DB or local
   const [selectedId, setSelectedId] = useState<string | number | null>(null);
-  const [showBanner, setShowBanner] = useState(false);
+  const [showLimitBanner, setShowLimitBanner] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -352,7 +346,6 @@ export default function RecipeBookPage() {
       const supabase = createClient();
       const { data } = await supabase.auth.getUser();
       if (data.user) {
-        setShowBanner(false);
         setUserId(data.user.id);
         // MIGRATION: If localStorage has recipes, migrate them to Supabase
         if (typeof window !== "undefined") {
@@ -382,8 +375,14 @@ export default function RecipeBookPage() {
           setRecipes([]);
         }
       } else {
-        setShowBanner(true);
         setUserId(null);
+        // Check if user has reached generation limit
+        if (typeof window !== "undefined") {
+          const generatedCount = localStorage.getItem("recipeGenerationCount");
+          if (generatedCount === "1") {
+            setShowLimitBanner(true);
+          }
+        }
         // Fallback to localStorage
         if (typeof window !== "undefined") {
           const stored = localStorage.getItem("savedRecipes");
@@ -463,8 +462,8 @@ export default function RecipeBookPage() {
         </div>
       )}
       <div className="w-full px-4 sm:px-6 lg:px-8 pt-4">
-        {showBanner && (
-          <AuthWarningBanner onClose={() => setShowBanner(false)} />
+        {showLimitBanner && (
+          <GenerationLimitBanner onClose={() => setShowLimitBanner(false)} />
         )}
       </div>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 relative z-10 flex flex-col md:flex-row gap-8">
