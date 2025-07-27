@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import type { TokenBalance, TokenValidationResult } from "@/lib/types/token";
 import { TOKEN_CONSTANTS } from "@/lib/types/token";
 
@@ -8,10 +9,13 @@ const { COST_PER_RECIPE_GENERATION, COST_PER_PHOTO_ANALYSIS } = TOKEN_CONSTANTS;
  * Get user's token balance from server-side
  */
 export async function getUserTokenBalanceServer(
-  userId: string
+  userId: string,
+  useServiceRole: boolean = false
 ): Promise<TokenBalance | null> {
   try {
-    const supabase = await createClient();
+    const supabase = useServiceRole
+      ? createServiceRoleClient()
+      : await createClient();
 
     const { data, error } = await supabase
       .from("user_tokens")
@@ -129,17 +133,40 @@ export async function consumeTokensServer(
  */
 export async function addTokensServer(
   userId: string,
-  amount: number
+  amount: number,
+  useServiceRole: boolean = false
 ): Promise<boolean> {
   try {
-    const supabase = await createClient();
+    // Use service role client for webhook operations, regular client for user operations
+    const supabase = useServiceRole
+      ? createServiceRoleClient()
+      : await createClient();
 
     // First get current balance
-    const currentBalance = await getUserTokenBalanceServer(userId);
+    const currentBalance = await getUserTokenBalanceServer(
+      userId,
+      useServiceRole
+    );
+
     if (!currentBalance) {
-      return false;
+      // No record exists, create one with the purchased tokens
+      console.log("Creating new token record for user:", userId);
+      const { error } = await supabase.from("user_tokens").insert({
+        user_id: userId,
+        tokens_balance: amount,
+        total_generations_used: 0,
+      });
+
+      if (error) {
+        console.error("Error creating user token record:", error);
+        return false;
+      }
+
+      console.log("Successfully created token record with", amount, "tokens");
+      return true;
     }
 
+    // Record exists, update the balance
     const { error } = await supabase
       .from("user_tokens")
       .update({
@@ -152,6 +179,7 @@ export async function addTokensServer(
       return false;
     }
 
+    console.log("Successfully added", amount, "tokens to existing balance");
     return true;
   } catch (error) {
     console.error("Error in addTokensServer:", error);

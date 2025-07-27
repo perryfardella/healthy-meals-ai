@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "prepare": "husky",
-    "mcp": "npx @agentdeskai/browser-tools-server@latest"
+    "mcp": "npx @agentdeskai/browser-tools-server@latest",
+    "stripe-listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "1.0.0-beta.8",
@@ -17,6 +18,8 @@
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
+    "@stripe/react-stripe-js": "^3.8.0",
+    "@stripe/stripe-js": "^7.6.1",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.3",
     "@vercel/analytics": "^1.5.0",
@@ -28,6 +31,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.60.0",
+    "stripe": "^18.3.0",
     "tailwind-merge": "^3.3.1",
     "zod": "^3.24.1"
   },

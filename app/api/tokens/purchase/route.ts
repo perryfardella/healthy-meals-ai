@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { addTokensServer } from "@/lib/services/token-server";
+import { createPaymentIntent } from "@/lib/services/stripe";
+import { TOKEN_CONSTANTS } from "@/lib/types/token";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,38 +18,36 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { amount } = body;
+    const { amount } = body; // amount in dollars
 
     if (!amount || typeof amount !== "number" || amount <= 0) {
-      return NextResponse.json(
-        { error: "Invalid token amount" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    // TODO: Integrate with Stripe for payment processing
-    // For now, this is a placeholder that adds tokens directly
-    // In production, this should:
-    // 1. Create a payment intent with Stripe
-    // 2. Verify payment completion
-    // 3. Add tokens only after successful payment
+    // Calculate token amount based on pricing
+    const tokenAmount = amount * TOKEN_CONSTANTS.TOKENS_PER_DOLLAR;
 
-    const success = await addTokensServer(user.id, amount);
-
-    if (!success) {
-      return NextResponse.json(
-        { error: "Failed to add tokens" },
-        { status: 500 }
-      );
-    }
+    // Create Stripe payment intent
+    const paymentIntent = await createPaymentIntent({
+      userId: user.id,
+      amount,
+      tokenAmount,
+    });
 
     return NextResponse.json({
       success: true,
-      message: `Successfully added ${amount} tokens to your account`,
-      amount,
+      clientSecret: paymentIntent.clientSecret,
+      paymentIntentId: paymentIntent.paymentIntentId,
+      amount: paymentIntent.amount,
+      tokenAmount: paymentIntent.tokenAmount,
     });
   } catch (error) {
     console.error("Error in POST /api/tokens/purchase:", error);
+
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
