@@ -9,7 +9,7 @@ An AI-powered recipe generation app that creates personalized, high-protein meal
 - 🎯 **Personalized**: Considers dietary preferences, allergies, and available ingredients
 - 📱 **Responsive Design**: Beautiful, mobile-first interface with Shadcn UI components
 - 🔐 **Authentication**: Secure user authentication with Supabase
-- 💳 **Token System**: Lemon Squeezy integration for token purchases
+- 💳 **Token System**: Stripe integration for token purchases
 
 ## Getting Started
 
@@ -48,7 +48,7 @@ pnpm dev
 - **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS, Shadcn UI
 - **Backend**: Supabase (PostgreSQL, Authentication)
 - **AI**: **Vercel AI SDK v5 (beta)**, DeepSeek, Vercel AI Gateway
-- **Payments**: Lemon Squeezy
+- **Payments**: Stripe
 - **Deployment**: Vercel
 
 ## Learn More

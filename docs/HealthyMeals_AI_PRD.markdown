@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Healthy Meals AI App is a web-based platform designed to empower users to create healthy, high-protein meals using ingredients they have on hand. By leveraging advanced AI technology through **Vercel AI SDK v5 (beta)** and Vercel's AI Gateway for centralized AI model management, the app provides personalized meal suggestions tailored to users' dietary preferences and restrictions, such as allergies. The app aims to simplify meal planning, promote nutritious eating, and enhance user wellness by offering detailed recipes and nutritional information. Integrated with LemonSqueezy for a token-based payment system, the app ensures accessibility with 10 free tokens for new users and affordable token purchases.
+The Healthy Meals AI App is a web-based platform designed to empower users to create healthy, high-protein meals using ingredients they have on hand. By leveraging advanced AI technology through **Vercel AI SDK v5 (beta)** and Vercel's AI Gateway for centralized AI model management, the app provides personalized meal suggestions tailored to users' dietary preferences and restrictions, such as allergies. The app aims to simplify meal planning, promote nutritious eating, and enhance user wellness by offering detailed recipes and nutritional information. Integrated with Stripe for a token-based payment system, the app ensures accessibility with 10 free tokens for new users and affordable token purchases.
 
 ## Success Metrics
 
@@ -21,7 +21,7 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
   - Basic meal generation based on text input of available ingredients.
   - Integration with **Vercel AI SDK v5 (beta)** and Vercel's AI Gateway for centralized AI model management.
   - Basic user authentication and profile management.
-  - LemonSqueezy integration for token purchases.
+  - Stripe integration for token purchases.
 - **Beta Testing**: November 2025 - December 2025
   - Invite beta testers to provide feedback.
   - Iterate on the app based on user feedback.
@@ -42,7 +42,7 @@ The Healthy Meals AI App is a web-based platform designed to empower users to cr
   - ✅ Recipe storage and management with CRUD operations.
   - ✅ Allergy and dietary preference filtering.
 - **In Development**:
-  - 🔄 Lemon Squeezy payment processing for token purchases (placeholder implemented).
+  - 🔄 Stripe payment processing for token purchases (placeholder implemented).
   - 🔄 Photo input for pantry items (advanced feature).
 - **Future Features**:
   - Multi-day meal planning.
@@ -81,7 +81,7 @@ The app uses a simplified token-based system designed for clarity and ease of us
 - **New Users**: Receive 10 free tokens upon signup
 - **Token Cost**: 1 token per recipe generation
 - **Photo Analysis**: 2 tokens per photo analysis (future feature)
-- **Purchase Rate**: 100 tokens for $1 via LemonSqueezy
+- **Purchase Rate**: 100 tokens for $1 via Stripe
 
 ### System Design
 
@@ -203,7 +203,7 @@ To support persistent recipe storage, sharing, and management, we will implement
   - Vercel AI Gateway for centralized AI model management and billing
   - Support for multiple AI models (Deepseek, OpenAI, Anthropic, etc.) through single gateway
 - **Payment Processing**
-  - LemonSqueezy for token purchases
+  - Stripe for token purchases
 - **Image Recognition (for photo input)**
   - **Vercel AI SDK v5 (beta)** with AI Gateway for image recognition across multiple models
 - **Language**: American English for all content

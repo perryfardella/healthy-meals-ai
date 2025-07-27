@@ -23,8 +23,8 @@ export interface TokenTransaction {
 
 export interface TokenPurchaseRequest {
   amount: number;
-  payment_provider: "lemonsqueezy";
-  payment_id?: string;
+  payment_provider: "stripe";
+  payment_intent_id?: string;
 }
 
 export interface TokenUsageRequest {

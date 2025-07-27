@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Integrate with Lemon Squeezy for payment processing
+    // TODO: Integrate with Stripe for payment processing
     // For now, this is a placeholder that adds tokens directly
     // In production, this should:
-    // 1. Create a payment session with Lemon Squeezy
+    // 1. Create a payment intent with Stripe
     // 2. Verify payment completion
     // 3. Add tokens only after successful payment
 

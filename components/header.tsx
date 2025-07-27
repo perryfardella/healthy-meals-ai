@@ -12,7 +12,7 @@ export interface HeaderProps {
 
 export function Header({
   onPurchaseTokens = () =>
-    alert("Redirecting to Lemon Squeezy for token purchase..."),
+    alert("Redirecting to Stripe for token purchase..."),
 }: HeaderProps) {
   const { user, loading: userLoading } = useUser();
   const { balance, loading: tokenLoading } = useTokens();
