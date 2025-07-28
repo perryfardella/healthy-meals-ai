@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ChefHat, Clock, Users, Loader2, Trash } from "lucide-react";
+import { ChefHat, Clock, Users, Loader2, Trash, Wand2 } from "lucide-react";
 import {
   RecipeGenerationResponseType,
   RecipeIngredient,
@@ -21,20 +21,35 @@ import {
   deleteRecipe,
   createRecipe,
 } from "@/lib/services/recipe";
+import RecipeModificationModal from "@/components/RecipeModificationModal";
 
 function RecipeCard({
   recipe,
+  onModify,
 }: {
   recipe: NonNullable<RecipeGenerationResponseType["recipe"]>;
+  onModify?: () => void;
 }) {
   if (!recipe) return null;
   return (
     <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 max-w-2xl mx-auto">
       <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg border-b border-emerald-100/50 p-6">
-        <CardTitle className="flex items-center space-x-2 text-emerald-800">
-          <ChefHat className="w-5 h-5 text-emerald-600" />
-          <span>{recipe.title}</span>
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center space-x-2 text-emerald-800">
+            <ChefHat className="w-5 h-5 text-emerald-600" />
+            <span>{recipe.title}</span>
+          </CardTitle>
+          {onModify && (
+            <Button
+              onClick={onModify}
+              size="sm"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+            >
+              <Wand2 className="w-4 h-4 mr-1" />
+              Modify
+            </Button>
+          )}
+        </div>
       </div>
       <CardContent className="space-y-4">
         <div>
@@ -282,6 +297,9 @@ export default function RecipeBookPage() {
     tips: string[] | null;
     estimated_cost: string | null;
     created_at: string;
+    parent_recipe_id?: number | null;
+    modification_request?: string | null;
+    modification_count?: number;
   };
   type LocalRecipe =
     import("@/lib/types/recipe").RecipeGenerationResponseType & { id: string };
@@ -294,6 +312,14 @@ export default function RecipeBookPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<
     string | number | null
   >(null);
+
+  // Recipe modification modal state
+  const [modificationModalOpen, setModificationModalOpen] = useState(false);
+  const [selectedRecipeForModification, setSelectedRecipeForModification] =
+    useState<{
+      recipe: NonNullable<RecipeGenerationResponseType["recipe"]>;
+      id: number;
+    } | null>(null);
 
   function isLocalRecipe(r: DBRecipe | LocalRecipe): r is LocalRecipe {
     return (
@@ -346,6 +372,37 @@ export default function RecipeBookPage() {
         | undefined,
     };
   }
+
+  // Handle recipe modification
+  const handleModifyRecipe = (recipe: DBRecipe | LocalRecipe) => {
+    if (!userId || isLocalRecipe(recipe)) {
+      // Don't allow modifications for local recipes or unauthenticated users
+      return;
+    }
+
+    const recipeForCard = getRecipeForCard(recipe);
+    setSelectedRecipeForModification({
+      recipe: recipeForCard,
+      id: recipe.id as number,
+    });
+    setModificationModalOpen(true);
+  };
+
+  const handleModificationSuccess = async () => {
+    // Refresh the recipe list
+    if (userId) {
+      setLoading(true);
+      const { data: dbRecipes } = await getUserRecipes(userId);
+      if (dbRecipes) {
+        setRecipes(dbRecipes);
+        // Select the most recently created recipe (should be the new modification)
+        if (dbRecipes.length > 0) {
+          setSelectedId(dbRecipes[0].id);
+        }
+      }
+      setLoading(false);
+    }
+  };
 
   // Check auth status and fetch recipes
   useEffect(() => {
@@ -440,6 +497,21 @@ export default function RecipeBookPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 relative overflow-hidden">
+      {/* Recipe Modification Modal */}
+      {selectedRecipeForModification && userId && (
+        <RecipeModificationModal
+          isOpen={modificationModalOpen}
+          onClose={() => {
+            setModificationModalOpen(false);
+            setSelectedRecipeForModification(null);
+          }}
+          originalRecipe={selectedRecipeForModification.recipe}
+          originalRecipeId={selectedRecipeForModification.id}
+          userId={userId}
+          onModificationSuccess={handleModificationSuccess}
+        />
+      )}
+
       {/* Confirmation Dialog */}
       {confirmDeleteId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -501,6 +573,11 @@ export default function RecipeBookPage() {
                   >
                     <div className="font-medium leading-tight line-clamp-2">
                       {getRecipeTitle(r)}
+                      {!isLocalRecipe(r) && r.parent_recipe_id && (
+                        <span className="ml-2 text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full">
+                          Modified
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
                       <span className="bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -549,7 +626,14 @@ export default function RecipeBookPage() {
               </span>
             </div>
           ) : selectedRecipe ? (
-            <RecipeCard recipe={getRecipeForCard(selectedRecipe)} />
+            <RecipeCard
+              recipe={getRecipeForCard(selectedRecipe)}
+              onModify={
+                userId && !isLocalRecipe(selectedRecipe)
+                  ? () => handleModifyRecipe(selectedRecipe)
+                  : undefined
+              }
+            />
           ) : (
             <div className="flex flex-col items-center text-center text-gray-600 mt-12 gap-6">
               <div>No recipe to display. Please generate a recipe first.</div>

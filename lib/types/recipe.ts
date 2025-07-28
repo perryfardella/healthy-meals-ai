@@ -53,6 +53,21 @@ export interface RecipeGenerationResponse {
   confidence: number; // 0-1 scale
 }
 
+// NEW: Recipe modification types
+export interface RecipeModificationRequest {
+  originalRecipe: Recipe;
+  modificationRequest: string; // e.g., "Make it vegetarian", "I don't have lemons, can I use limes?"
+  availableIngredients?: string[]; // Updated list of available ingredients
+  dietaryPreferences?: string[]; // Updated dietary preferences
+  allergies?: string[]; // Updated allergies
+}
+
+export interface RecipeModificationResponse {
+  modifiedRecipe: Recipe;
+  confidence: number; // 0-1 scale
+  changesExplanation: string; // Explanation of what was changed and why
+}
+
 // Zod schemas for AI SDK structured data generation
 import { z } from "zod";
 
@@ -263,7 +278,59 @@ export const recipeGenerationSchema = z
     }
   );
 
+// NEW: Recipe modification schemas
+export const recipeModificationSchema = z
+  .object({
+    // Success case fields
+    modifiedRecipe: recipeSchema
+      .optional()
+      .describe("The modified recipe with all details"),
+    confidence: z
+      .number()
+      .min(0, "Confidence must be at least 0")
+      .max(1, "Confidence cannot exceed 1")
+      .optional()
+      .describe(
+        "Confidence score (0-1) for how well the modification matches the user's request"
+      ),
+    changesExplanation: z
+      .string()
+      .min(10)
+      .optional()
+      .describe("Clear explanation of what was changed and why"),
+
+    // Error case fields
+    error: z
+      .literal(true)
+      .optional()
+      .describe("Set to true when recipe cannot be modified"),
+    message: z
+      .string()
+      .optional()
+      .describe("Explanation of why the recipe could not be modified"),
+    suggestions: z
+      .array(z.string())
+      .optional()
+      .describe("Suggestions for how to adjust the modification request"),
+  })
+  .refine(
+    (data) => {
+      // Must have either modifiedRecipe+confidence+changesExplanation OR error+message
+      const hasSuccess = data.modifiedRecipe && data.confidence !== undefined && data.changesExplanation;
+      const hasError = data.error && data.message;
+      return hasSuccess || hasError;
+    },
+    {
+      message:
+        "Must have either modifiedRecipe+confidence+changesExplanation (success) or error+message (failure)",
+    }
+  );
+
 // Type exports for use with AI SDK
 export type RecipeGenerationResponseType = z.infer<
   typeof recipeGenerationSchema
+>;
+
+export type RecipeModificationResponseType = z.infer<
+  typeof recipeModificationSchema
 >;
