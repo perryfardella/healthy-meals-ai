@@ -54,17 +54,18 @@ export function Header({ onPurchaseTokens }: HeaderProps) {
                   <span className="text-sm text-gray-600">
                     {balance?.tokens_balance || 0} tokens
                   </span>
+                  <Button
+                    onClick={handlePurchaseClick}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
+                  >
+                    <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Buy Tokens</span>
+                    <span className="sm:hidden">Buy</span>
+                  </Button>
                 </div>
               )}
-              <Button
-                onClick={handlePurchaseClick}
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
-              >
-                <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Buy Tokens</span>
-                <span className="sm:hidden">Buy</span>
-              </Button>
+
               <Button
                 variant="ghost"
                 size="sm"
