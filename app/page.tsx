@@ -35,11 +35,15 @@ import {
   Coffee,
   AlertCircle,
   Loader2,
+  Coins,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { RecipeGenerationResponseType } from "@/lib/types/recipe";
 import { createClient } from "@/lib/supabase/client";
 import { createRecipe } from "@/lib/services/recipe";
+import { useTokens } from "@/lib/hooks/useTokens";
+import { TokenPurchaseModal } from "@/components/TokenPurchaseModal";
+import { notifyTokenBalanceUpdate } from "@/lib/utils/token-events";
 
 // Form validation schema
 const formSchema = z.object({
@@ -184,9 +188,14 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   // removed generatedMeal state, now handled via navigation
   const [error, setError] = useState<string | null>(null);
-  const [hasGeneratedRecipe, setHasGeneratedRecipe] = useState<boolean>(false);
+  const [hasGeneratedRecipeInLastDay, setHasGeneratedRecipeInLastDay] =
+    useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const router = useRouter();
+
+  // Token management
+  const { balance, validateGeneration, refreshBalance } = useTokens();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -218,13 +227,13 @@ export default function Home() {
 
       if (data.user) {
         setIsLoggedIn(true);
-        setHasGeneratedRecipe(false); // Logged in users have no limit
+        setHasGeneratedRecipeInLastDay(false); // Logged in users have no limit
       } else {
         setIsLoggedIn(false);
         // Check if user has already generated a recipe (non-logged in users)
         if (typeof window !== "undefined") {
           const generatedCount = localStorage.getItem("recipeGenerationCount");
-          setHasGeneratedRecipe(generatedCount === "1");
+          setHasGeneratedRecipeInLastDay(generatedCount === "1");
         }
       }
     };
@@ -326,11 +335,22 @@ export default function Home() {
 
   const generateMeal = async () => {
     // Check if non-logged in user has already generated a recipe
-    if (!isLoggedIn && hasGeneratedRecipe) {
+    if (isLoggedIn === false && hasGeneratedRecipeInLastDay) {
       setError(
-        "You&apos;ve already generated one recipe. Please sign up to generate more recipes!"
+        "You&apos;ve already generated one recipe in the last 24 hours. Please sign up to generate more recipes!"
       );
       return;
+    }
+
+    // Check token balance for logged-in users
+    if (isLoggedIn === true) {
+      const tokenValidation = await validateGeneration("recipe_generation");
+      if (tokenValidation && !tokenValidation.can_generate) {
+        setError(
+          `Insufficient tokens. You need ${tokenValidation.cost_per_generation} token(s) to generate a recipe, but you only have ${tokenValidation.remaining_tokens} token(s) remaining.`
+        );
+        return;
+      }
     }
 
     setIsGenerating(true);
@@ -374,11 +394,28 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
         body: JSON.stringify(requestData),
       });
       const data = await response.json();
-      if (!response.ok || data.error) {
-        throw new Error(
-          data.error || `Failed to generate recipe: ${response.statusText}`
-        );
+
+      if (!response.ok) {
+        // Handle specific error cases
+        if (response.status === 402) {
+          // Insufficient tokens error
+          const errorMessage = data.details
+            ? `Insufficient tokens. You need ${data.details.cost_per_generation} token(s) to generate a recipe, but you only have ${data.details.remaining_tokens} token(s) remaining.`
+            : data.error || "Insufficient tokens to generate recipe";
+          throw new Error(errorMessage);
+        } else if (response.status === 401) {
+          throw new Error("Please log in to generate recipes");
+        } else {
+          throw new Error(
+            data.error || `Failed to generate recipe: ${response.statusText}`
+          );
+        }
       }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       // Save recipe to Supabase if logged in, else localStorage
       if (typeof window !== "undefined") {
         const supabase = createClient();
@@ -402,9 +439,17 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
 
           // Track recipe generation count for non-logged in users
           localStorage.setItem("recipeGenerationCount", "1");
-          setHasGeneratedRecipe(true);
+          setHasGeneratedRecipeInLastDay(true);
         }
       }
+
+      // The real-time subscription will automatically update the balance
+      // No need for manual refresh to avoid flickering
+      if (isLoggedIn === true) {
+        // Notify all components about the token balance update
+        notifyTokenBalanceUpdate();
+      }
+
       router.push("/recipe-book");
     } catch (err) {
       console.error("Error generating recipe:", err);
@@ -436,7 +481,7 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
             ingredients and dietary needs. Save time, eat healthy, and enjoy
             delicious meals every day.
           </p>
-          {!isLoggedIn && (
+          {isLoggedIn === false && (
             <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 text-sm text-blue-700">
               <span>✨</span>
               <span>Sign up to get 10 free tokens for recipe generation</span>
@@ -891,7 +936,7 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                 </Card>
 
                 {/* Recipe Generation Limit Warning */}
-                {!isLoggedIn && hasGeneratedRecipe && (
+                {isLoggedIn === false && hasGeneratedRecipeInLastDay && (
                   <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-orange-500/10">
                     <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-t-lg border-b border-orange-100/50 p-6">
                       <CardTitle className="flex items-center space-x-2 text-orange-800">
@@ -924,6 +969,47 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                   </Card>
                 )}
 
+                {/* Token Balance Display for Logged-in Users */}
+                {isLoggedIn === true && balance && (
+                  <Card className="bg-white/90 pt-0 backdrop-blur-sm border-0 shadow-xl shadow-yellow-500/10">
+                    <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-t-lg border-b border-yellow-100/50 p-6">
+                      <CardTitle className="flex items-center space-x-2 text-yellow-800">
+                        <Coins className="w-5 h-5 text-yellow-600" />
+                        <span>Token Balance</span>
+                      </CardTitle>
+                    </div>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl font-bold text-yellow-700">
+                            {balance.tokens_balance}
+                          </span>
+                          <span className="text-yellow-600">
+                            tokens remaining
+                          </span>
+                        </div>
+                        <div className="text-sm text-yellow-600">
+                          Cost per recipe: 1 token
+                        </div>
+                      </div>
+                      {balance.tokens_balance === 0 && (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-red-700 text-sm">
+                            You need tokens to generate recipes. Purchase tokens
+                            to continue.
+                          </p>
+                          <Button
+                            onClick={() => setIsPurchaseModalOpen(true)}
+                            className="mt-2 bg-red-600 hover:bg-red-700 text-white text-sm"
+                          >
+                            Purchase Tokens
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Generate Button */}
                 <div className="relative group">
                   <Button
@@ -931,7 +1017,10 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                     disabled={
                       isGenerating ||
                       !watchedValues.ingredients?.trim() ||
-                      (!isLoggedIn && hasGeneratedRecipe)
+                      (!!isLoggedIn === false && hasGeneratedRecipeInLastDay) ||
+                      (!!isLoggedIn === true &&
+                        !!balance &&
+                        balance.tokens_balance === 0)
                     }
                     className="w-full h-12 sm:h-14 text-base sm:text-lg bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 disabled:from-gray-400 disabled:via-gray-400 disabled:to-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
                   >
@@ -943,13 +1032,23 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
                         </span>
                         <span className="sm:hidden">Creating...</span>
                       </>
-                    ) : !isLoggedIn && hasGeneratedRecipe ? (
+                    ) : isLoggedIn === false && hasGeneratedRecipeInLastDay ? (
                       <>
                         <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                         <span className="hidden sm:inline">
                           Sign Up to Generate More
                         </span>
                         <span className="sm:hidden">Sign Up Required</span>
+                      </>
+                    ) : isLoggedIn === true &&
+                      balance &&
+                      balance.tokens_balance === 0 ? (
+                      <>
+                        <Coins className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                        <span className="hidden sm:inline">
+                          Purchase Tokens to Generate
+                        </span>
+                        <span className="sm:hidden">Need Tokens</span>
                       </>
                     ) : (
                       <>
@@ -990,6 +1089,12 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
           </form>
         </Form>
       </main>
+
+      <TokenPurchaseModal
+        isOpen={isPurchaseModalOpen}
+        onClose={() => setIsPurchaseModalOpen(false)}
+        onSuccess={refreshBalance}
+      />
     </div>
   );
 }

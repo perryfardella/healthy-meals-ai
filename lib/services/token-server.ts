@@ -116,6 +116,10 @@ export async function consumeTokensServer(
         console.error("Error using tokens:", error);
         return false;
       }
+
+      console.log(
+        `Successfully consumed ${costPerGeneration} tokens for user ${userId}`
+      );
     } else {
       console.error("Insufficient tokens for generation");
       return false;

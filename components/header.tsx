@@ -52,7 +52,14 @@ export function Header({ onPurchaseTokens }: HeaderProps) {
                 <div className="hidden sm:flex items-center space-x-2">
                   <Sparkles className="w-4 h-4 text-yellow-500" />
                   <span className="text-sm text-gray-600">
-                    {balance?.tokens_balance || 0} tokens
+                    {tokenLoading ? (
+                      <span className="flex items-center">
+                        <div className="w-3 h-3 border border-yellow-500 border-t-transparent rounded-full animate-spin mr-1"></div>
+                        Updating...
+                      </span>
+                    ) : (
+                      `${balance?.tokens_balance || 0} tokens`
+                    )}
                   </span>
                   <Button
                     onClick={handlePurchaseClick}

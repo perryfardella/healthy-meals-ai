@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, CreditCard } from "lucide-react";
+import { notifyTokenBalanceUpdate } from "@/lib/utils/token-events";
 
 // Initialize Stripe
 const stripePromise = loadStripe(
@@ -110,18 +111,25 @@ function PaymentForm({
         throw new Error(stripeError.message || "Payment failed");
       }
 
-      // Payment successful - wait for webhook to process
+      // Payment successful - webhook will process tokens
       console.log("Payment confirmed, processing tokens...");
 
-      // Show success message and wait for webhook
+      // Show success message
       setError(null);
       setIsLoading(true);
 
-      // Wait for webhook to process, then refresh and close
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 3000); // Wait 3 seconds for webhook to process
+      // Show success notification
+      const successMessage = `Successfully purchased ${selectedPackage.tokens} tokens!`;
+      console.log(successMessage);
+
+      // You can add a toast notification here if you have a toast system
+      // For now, we'll just log it and show a brief success state
+
+      // Call onSuccess immediately - real-time updates will handle the balance refresh
+      onSuccess();
+      // Notify all components about the token balance update
+      notifyTokenBalanceUpdate();
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

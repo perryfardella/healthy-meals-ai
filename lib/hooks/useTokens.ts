@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@/lib/hooks/useUser";
+import { createClient } from "@/lib/supabase/client";
 import type { TokenBalance, TokenValidationResult } from "@/lib/types/token";
+import { subscribeToTokenBalanceUpdates } from "@/lib/utils/token-events";
 
 interface UseTokensReturn {
   balance: TokenBalance | null;
@@ -39,6 +41,7 @@ export function useTokens(): UseTokensReturn {
       }
 
       const data = await response.json();
+      console.log("Fetched new balance:", data);
       setBalance(data);
     } catch (err) {
       console.error("Error fetching token balance:", err);
@@ -128,6 +131,58 @@ export function useTokens(): UseTokensReturn {
   useEffect(() => {
     fetchBalance();
   }, [fetchBalance]);
+
+  // Set up real-time subscription for token balance updates
+  useEffect(() => {
+    if (!user) return;
+
+    const supabase = createClient();
+
+    console.log("Setting up real-time subscription for user:", user.id);
+
+    // Subscribe to changes in the user_tokens table for the current user
+    const subscription = supabase
+      .channel(`user_tokens_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_tokens",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Token balance updated via real-time:", payload);
+          // Refresh balance when tokens are updated
+          fetchBalance();
+        }
+      )
+      .subscribe((status) => {
+        console.log("Real-time subscription status:", status);
+        // If real-time fails, fall back to polling every 30 seconds
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.warn(
+            "Real-time subscription failed, falling back to polling"
+          );
+        }
+      });
+
+    // Also set up a more frequent polling as backup (every 10 seconds)
+    const pollInterval = setInterval(() => {
+      console.log("Backup polling check...");
+      fetchBalance();
+    }, 10000);
+
+    // Subscribe to global token balance events
+    const unsubscribe = subscribeToTokenBalanceUpdates(fetchBalance);
+
+    return () => {
+      console.log("Cleaning up real-time subscription for user:", user.id);
+      subscription.unsubscribe();
+      clearInterval(pollInterval);
+      unsubscribe();
+    };
+  }, [user, fetchBalance]);
 
   return {
     balance,
