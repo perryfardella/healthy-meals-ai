@@ -221,18 +221,49 @@ export const recipeSchema = z.object({
     .describe("Estimated cost category for ingredients"),
 });
 
-export const recipeGenerationResponseSchema = z.object({
-  recipe: recipeSchema.describe("The complete recipe with all details"),
-  confidence: z
-    .number()
-    .min(0, "Confidence must be at least 0")
-    .max(1, "Confidence cannot exceed 1")
-    .describe(
-      "Confidence score (0-1) for how well this recipe matches the user's requirements"
-    ),
-});
+export const recipeGenerationSchema = z
+  .object({
+    // Success case fields
+    recipe: recipeSchema
+      .optional()
+      .describe("The complete recipe with all details"),
+    confidence: z
+      .number()
+      .min(0, "Confidence must be at least 0")
+      .max(1, "Confidence cannot exceed 1")
+      .optional()
+      .describe(
+        "Confidence score (0-1) for how well this recipe matches the user's requirements"
+      ),
+
+    // Error case fields
+    error: z
+      .literal(true)
+      .optional()
+      .describe("Set to true when recipe cannot be generated"),
+    message: z
+      .string()
+      .optional()
+      .describe("Explanation of why a recipe could not be generated"),
+    suggestions: z
+      .array(z.string())
+      .optional()
+      .describe("Suggestions for how to adjust the request"),
+  })
+  .refine(
+    (data) => {
+      // Must have either recipe+confidence OR error+message
+      const hasRecipe = data.recipe && data.confidence !== undefined;
+      const hasError = data.error && data.message;
+      return hasRecipe || hasError;
+    },
+    {
+      message:
+        "Must have either recipe+confidence (success) or error+message (failure)",
+    }
+  );
 
 // Type exports for use with AI SDK
 export type RecipeGenerationResponseType = z.infer<
-  typeof recipeGenerationResponseSchema
+  typeof recipeGenerationSchema
 >;

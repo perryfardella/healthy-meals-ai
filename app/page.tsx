@@ -416,17 +416,33 @@ Estimated Cost: ${formData.estimatedCost || "Not specified"}`,
         throw new Error(data.error);
       }
 
+      // Check if we got a valid recipe
+      if (!data.recipe || data.error) {
+        // Handle error response with suggestions
+        const errorMessage =
+          data.error ||
+          "I couldn't create a recipe that meets all your requirements.";
+        const suggestions = data.suggestions || [];
+        const suggestionText =
+          suggestions.length > 0
+            ? `\n\nSuggestions:\n${suggestions
+                .map((s: string) => `• ${s}`)
+                .join("\n")}`
+            : "";
+        throw new Error(`${errorMessage}${suggestionText}`);
+      }
+
       // Save recipe to Supabase if logged in, else localStorage
       if (typeof window !== "undefined") {
         const supabase = createClient();
         const { data: authData } = await supabase.auth.getUser();
         if (authData.user) {
           // Save to Supabase
-          await createRecipe(data.object.recipe, authData.user.id);
+          await createRecipe(data.recipe, authData.user.id);
         } else {
           // Save to localStorage as before
           const recipeWithId = {
-            ...data.object,
+            ...data,
             id: window.crypto?.randomUUID?.() || Date.now().toString(),
           };
           let savedRecipes: RecipeGenerationResponseType[] = [];

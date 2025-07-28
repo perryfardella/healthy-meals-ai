@@ -25,7 +25,7 @@ import {
 function RecipeCard({
   recipe,
 }: {
-  recipe: RecipeGenerationResponseType["recipe"];
+  recipe: NonNullable<RecipeGenerationResponseType["recipe"]>;
 }) {
   if (!recipe) return null;
   return (
@@ -296,28 +296,36 @@ export default function RecipeBookPage() {
   >(null);
 
   function isLocalRecipe(r: DBRecipe | LocalRecipe): r is LocalRecipe {
-    return (r as LocalRecipe).recipe !== undefined;
+    return (
+      (r as LocalRecipe).recipe !== undefined &&
+      (r as LocalRecipe).recipe !== null
+    );
   }
   function getRecipeTitle(r: DBRecipe | LocalRecipe) {
-    return isLocalRecipe(r) ? r.recipe.title : r.title;
+    return isLocalRecipe(r) ? r.recipe?.title || "Untitled Recipe" : r.title;
   }
   function getRecipeTotalTime(r: DBRecipe | LocalRecipe) {
     return isLocalRecipe(r)
-      ? (r.recipe.prepTime || 0) + (r.recipe.cookTime || 0)
+      ? (r.recipe?.prepTime || 0) + (r.recipe?.cookTime || 0)
       : (r.prep_time || 0) + (r.cook_time || 0);
   }
   function getRecipeProtein(r: DBRecipe | LocalRecipe) {
     return isLocalRecipe(r)
-      ? r.recipe.nutrition?.protein
+      ? r.recipe?.nutrition?.protein
       : r.nutrition?.protein;
   }
   function getRecipeCalories(r: DBRecipe | LocalRecipe) {
     return isLocalRecipe(r)
-      ? r.recipe.nutrition?.calories
+      ? r.recipe?.nutrition?.calories
       : r.nutrition?.calories;
   }
   function getRecipeForCard(r: DBRecipe | LocalRecipe) {
-    if (isLocalRecipe(r)) return r.recipe;
+    if (isLocalRecipe(r)) {
+      if (!r.recipe) {
+        throw new Error("Recipe data is missing");
+      }
+      return r.recipe;
+    }
     return {
       title: r.title,
       description: r.description,
