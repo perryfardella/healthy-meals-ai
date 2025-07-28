@@ -167,19 +167,12 @@ export function useTokens(): UseTokensReturn {
         }
       });
 
-    // Also set up a more frequent polling as backup (every 10 seconds)
-    const pollInterval = setInterval(() => {
-      console.log("Backup polling check...");
-      fetchBalance();
-    }, 10000);
-
     // Subscribe to global token balance events
     const unsubscribe = subscribeToTokenBalanceUpdates(fetchBalance);
 
     return () => {
       console.log("Cleaning up real-time subscription for user:", user.id);
       subscription.unsubscribe();
-      clearInterval(pollInterval);
       unsubscribe();
     };
   }, [user, fetchBalance]);
